@@ -1,6 +1,6 @@
 # Travel VN
 
-Ứng dụng Android viết bằng Java để thử luồng lập lịch trình và chia chi phí du lịch nhóm.
+Travel VN là ứng dụng Android viết bằng Java để lập lịch trình, khám phá Việt Nam và chia chi phí du lịch nhóm.
 
 ## Chạy trong Android Studio
 
@@ -23,31 +23,42 @@ APK được tạo tại `app/build/outputs/apk/debug/app-debug.apk`.
 - Mở tab **Chi tiêu** của chuyến đi để ghi khoản chi, chọn người trả và những người cần chia. **Xem công nợ** gợi ý các khoản chuyển. Dữ liệu của chuyến Ninh Bình từ bản trước vẫn dùng được.
 - **Hành lý**, **Tài liệu** và **Nhật ký** lưu theo từng chuyến trên thiết bị. Mục **Thành viên** chia sẻ kế hoạch dạng văn bản.
 
-**Hỏi AI** trả lời ngay từ cẩm nang lưu trên máy khi chưa bật Gemini. Mỗi câu trả lời ghi rõ nguồn. Bạn có thể hỏi về địa điểm, món ăn, chỗ ở, hành lý và lịch theo ngày ở bảy điểm đến. Khi thông tin cần dữ liệu mới, trợ lý có thể mở tìm kiếm trên Google Maps. **Hỏi trợ lý về lịch trình** mở câu hỏi điền sẵn. Dùng **Thêm hoạt động** để lưu các gợi ý bạn chọn.
+- Từ **Menu**, mở **Đăng nhập hoặc tạo tài khoản**. Dùng **Quên mật khẩu?** để nhận liên kết qua email. Sau khi đăng nhập, mở **Hồ sơ và bảo mật** để đổi tên, ảnh bìa hoặc mật khẩu, và đăng xuất. Ảnh bìa và dữ liệu chuyến đi lưu trên từng thiết bị. Firebase đồng bộ thông tin tài khoản và tên hiển thị.
+- Mở **Khám phá → Khám phá 63 tỉnh/thành**, chọn địa phương rồi chọn một trong tám hạng mục. Danh mục dùng tên trước sắp xếp hành chính. Máy chủ tìm địa điểm theo hạng mục bằng Google Places, ưu tiên kết quả có ảnh và hiện nguồn ảnh khi Google cung cấp. Khi chưa kết nối, dùng **Tìm trên Google Maps** để xem bên ngoài app.
+- Mở **Hỏi AI** và gửi câu hỏi. Gemini nhận các lượt gần nhất, lịch đã lưu của chuyến đang mở, ngân sách, tổng chi phí đã ghi, hành lý và các điểm đã lưu. Trợ lý ưu tiên dữ liệu chuyến đi và dùng Google Search cho câu hỏi cần tra cứu. Khi chưa bật Gemini, app chỉ hiện câu trả lời từ lịch hoặc cẩm nang có sẵn và cung cấp liên kết tìm kiếm cho câu ngoài phạm vi.
 
 Mở **Chuyến đi → Kế hoạch → Lộ trình** để chuyển ngày, xem ghim và danh sách điểm dừng. Nét đứt biểu diễn thứ tự ghé. **Tính đường giữa ghim** lấy đường ô tô ước tính từ OSRM cho các điểm đã có tọa độ. **Mở chỉ đường trên Google Maps** đưa các điểm trong ngày sang Google Maps, kể cả điểm nhập tay. Bản đồ nền OpenStreetMap và tính đường cần mạng.
 
 Tab **Khám phá** có ảnh, địa điểm theo vùng và nút lưu yêu thích. Tab **Kỷ niệm** có danh sách nơi đã đi. Xem lại điểm yêu thích từ **Menu → Địa điểm đã lưu**.
 
-## Bật Hỏi AI bằng Gemini
+## Bật tài khoản, Google Places và Gemini
 
-1. Tạo khóa ở [Google AI Studio](https://aistudio.google.com/app/apikey). Giữ khóa Gemini trên máy chạy máy chủ.
-2. Trong PowerShell 7, mở thư mục dự án và chạy các lệnh sau. Khi được hỏi, dán khóa Gemini vào ô nhập ẩn. Chuỗi in từ lệnh `node -p` là mã truy cập Travel VN dùng để nhập vào app.
+1. Tạo dự án Firebase và bật **Authentication → Sign-in method → Email/Password**. Lấy **Web API Key** và **Project ID** từ Project settings. [Firebase Auth](https://firebase.google.com/docs/auth/android/password-auth)
+2. Bật **Places API (New)** trong dự án Google Cloud có thanh toán và giới hạn khóa máy chủ cho API đó. Tạo khóa Gemini trong Google AI Studio. Cất cả hai khóa trên máy chủ. [Google Places](https://developers.google.com/maps/documentation/places/web-service/cloud-setup) · [Google AI Studio](https://aistudio.google.com/app/apikey)
+3. Trong PowerShell 7, tại thư mục dự án, cấu hình máy chủ.
 
 ```powershell
-$env:GEMINI_API_KEY = Read-Host "Khóa Gemini" -MaskInput
-$env:TRAVEL_AI_TOKEN = node -p "require('node:crypto').randomBytes(24).toString('base64url')"
-$env:TRAVEL_AI_TOKEN
+$env:FIREBASE_WEB_API_KEY = Read-Host "Firebase Web API Key"
+$env:FIREBASE_PROJECT_ID = Read-Host "Firebase Project ID"
+$env:GOOGLE_MAPS_API_KEY = Read-Host "Khóa Google Places của máy chủ" -MaskInput
+$env:GEMINI_API_KEY = Read-Host "Khóa Gemini của máy chủ" -MaskInput
 $env:GEMINI_GROUNDING = 'search'
 node .\server\index.mjs
 ```
 
-3. Giữ cửa sổ máy chủ đang chạy. Trên máy ảo Android Studio dùng địa chỉ `http://10.0.2.2:8787/api/chat`. Trên điện thoại USB có gỡ lỗi, chạy `adb reverse tcp:8787 tcp:8787` rồi dùng `http://127.0.0.1:8787/api/chat`. HTTP loopback chỉ có trong bản debug.
-4. Mở **Menu → Cấu hình Gemini (tùy chọn)**. Nhập địa chỉ trên và mã truy cập Travel VN. Địa chỉ được lưu trên thiết bị, mã truy cập chỉ tồn tại trong phiên chạy app. Người dùng có thể gửi câu hỏi ngay từ **Hỏi AI**, kể cả khi chưa cấu hình máy chủ.
+4. Giữ máy chủ chạy và build APK từ cửa sổ PowerShell khác. Dùng địa chỉ gốc của máy chủ, không kèm `/api/chat`. Trên máy ảo debug có thể dùng `http://10.0.2.2:8787`. Khi phát APK cho điện thoại, đặt máy chủ đang nghe ở `127.0.0.1:8787` sau cổng HTTPS và dùng tên miền thực.
 
-Máy chủ nghe trên loopback. Để truy cập từ ngoài máy hoặc qua Internet, đặt dịch vụ sau một cổng HTTPS có kiểm soát truy cập. Khi gửi câu hỏi, máy chủ chuyển câu hỏi, vài lượt gần nhất và ngữ cảnh cơ bản của chuyến đi cho Gemini. Chi tiêu, tài liệu và nhật ký không được tự động đính kèm.
+```powershell
+$env:FIREBASE_WEB_API_KEY = Read-Host "Cùng Firebase Web API Key đã dùng trên máy chủ"
+$env:TRAVEL_BACKEND_URL = Read-Host "Địa chỉ gốc của máy chủ"
+.\gradlew.bat :app:assembleDebug
+```
 
-`GEMINI_MODEL` mặc định là `gemini-3.8-flash`. Chọn `GEMINI_GROUNDING=search-maps` để bật thêm Google Maps, hoặc `none` nếu chỉ thử hỏi đáp Gemini. Quyền dùng công cụ Google phụ thuộc model và cấu hình Google Cloud. [Xem giá và hạn mức của Gemini](https://ai.google.dev/gemini-api/docs/pricing). Kiểm tra máy chủ bằng `node --test .\server\index.test.mjs`.
+5. Cài APK mới và đăng nhập một lần. Trợ lý và Khám phá lấy phiên đăng nhập để gọi máy chủ. Người dùng không cần nhập địa chỉ API hoặc mã truy cập trong chat.
+
+`GEMINI_MODEL` mặc định là `gemini-3.8-flash`. Chọn `GEMINI_GROUNDING=search-maps` để bật thêm Google Maps, hoặc `none` nếu chỉ thử hỏi đáp Gemini. Kiểm tra máy chủ bằng `node --test .\server\index.test.mjs`. [Google Search grounding](https://ai.google.dev/gemini-api/docs/generate-content/google-search)
+
+Bản APK build với cấu hình trống dùng được các màn hình và dữ liệu trên máy. Tài khoản thật, dữ liệu Places và câu trả lời Gemini cần dự án và máy chủ đã cấu hình. Menu của bản debug có mục **Kết nối máy chủ thử nghiệm** để dùng máy chủ phát triển với `TRAVEL_AI_TOKEN` riêng.
 
 Ảnh từ Wikimedia Commons được thu nhỏ và cắt khung khi hiển thị. Giấy phép của từng ảnh vẫn áp dụng cho bản thu nhỏ và phần hiển thị cắt khung.
 

@@ -63,6 +63,7 @@ public final class MainActivity extends Activity {
     private static final String[] TABS = {"Trang chủ", "Khám phá", "Kỷ niệm", "Menu"};
     private static final int HOME = 0, EXPLORE = 1, MEMORIES = 2, MENU = 3, TRIPS = 4, CALENDAR = 5;
     private static final int PLAN = 0, TRIP_EXPLORE = 1, GUIDE = 2, MONEY = 3, JOURNAL = 4;
+    private static final int ACCOUNT_REQUEST = 42;
     private static final int[] NAV_ICONS = {0, 2, 3, 4};
     private static final String[] SECTIONS = {"Kế hoạch", "Khám phá", "Cẩm nang", "Chi tiêu", "Nhật ký"};
     private static final String[] DESTINATIONS = {"Phú Quốc", "Huế", "Sa Pa", "Quy Nhơn", "Đà Lạt", "Hội An", "Phú Yên", "Mũi Né", "Ninh Bình", "Đà Nẵng"};
@@ -265,7 +266,9 @@ public final class MainActivity extends Activity {
     private void home() {
         LinearLayout header = row();
         header.setGravity(Gravity.CENTER_VERTICAL);
-        TextView avatar = action("M", TINT, BLUE, () -> navigate(MENU));
+        String name = accountName();
+        TextView avatar = action(name.substring(0, name.offsetByCodePoints(0, 1)).toUpperCase(Locale.ROOT),
+                TINT, BLUE, this::openAccount);
         avatar.setContentDescription("Hồ sơ cá nhân");
         avatar.setBackground(rounded(TINT, 24));
         header.addView(avatar, new LinearLayout.LayoutParams(dp(44), dp(44)));
@@ -273,7 +276,7 @@ public final class MainActivity extends Activity {
         greeting.setPadding(dp(10), 0, 0, 0);
         header.addView(greeting, new LinearLayout.LayoutParams(0, -2, 1));
         line(greeting, "Chào bạn ☀", 12, MUTED, false);
-        line(greeting, storage.getString("displayName", "Minh Nguyễn"), 19, NAVY, true);
+        line(greeting, name, 19, NAVY, true);
         TextView tripsButton = action("▤", WHITE, NAVY, () -> navigate(TRIPS));
         tripsButton.setContentDescription("Chuyến đi của bạn");
         header.addView(tripsButton, new LinearLayout.LayoutParams(dp(45), dp(45)));
@@ -703,10 +706,42 @@ public final class MainActivity extends Activity {
 
     private void openAssistant(Trip item, String prompt) {
         Intent intent = new Intent(this, AssistantActivity.class);
-        if (item != null) intent.putExtra("trip", item.destination() + ", " + tripMeta(item)
-                + (tripDates(item).isEmpty() ? "" : ", " + tripDates(item))
-                + (item.budget() == 0 ? "" : ", ngân sách nhóm " + money(item.budget()))
-                + (item.stops().isEmpty() ? "" : ", nơi muốn ghé: " + TextUtils.join(", ", item.stops())));
+        StringBuilder data = new StringBuilder();
+        if (item != null) {
+            intent.putExtra("trip", item.destination());
+            String summary = (item.id().isEmpty() ? "Chuyến mẫu " : "Chuyến ")
+                    + item.destination() + ", " + tripMeta(item)
+                    + (tripDates(item).isEmpty() ? "" : ", " + tripDates(item))
+                    + (item.budget() == 0 ? "" : ", ngân sách nhóm " + money(item.budget()));
+            data.append(summary);
+            ArrayList<String> days = new ArrayList<>();
+            for (int index = 0; index < item.days(); index++) {
+                List<String> stops = activities(item, index);
+                String plan = stops.isEmpty() ? "Chưa có hoạt động." : TextUtils.join("\n", stops);
+                days.add(plan);
+                data.append("\nNgày ").append(index + 1).append(": ").append(plan);
+            }
+            intent.putStringArrayListExtra("days", days);
+            List<String> todo = new ArrayList<>();
+            int checked = storage.getInt("packing:" + item.id(), 0);
+            for (int index = 0; index < PACKING.length; index++) {
+                if ((checked & (1 << index)) == 0) todo.add(PACKING[index]);
+            }
+            data.append("\nHành lý còn thiếu: ").append(todo.isEmpty() ? "Đã đủ" : TextUtils.join(", ", todo));
+            JSONArray expenses = savedArray(item.id().isEmpty() ? "expenses" : "expenses:" + item.id());
+            long recorded = 0;
+            for (int index = 0; index < expenses.length(); index++) {
+                JSONObject expense = expenses.optJSONObject(index);
+                if (expense != null) recorded += expense.optLong("amount");
+            }
+            if (expenses.length() > 0) data.append("\nChi phí đã ghi: ").append(money(recorded));
+        }
+        for (TravelCatalog.Place place : TravelCatalog.PLACES) {
+            if (storage.getBoolean("bookmark:" + place.city() + ":" + place.name(), false)) {
+                data.append("\nĐiểm đã lưu: ").append(place.name()).append(" · ").append(place.city());
+            }
+        }
+        intent.putExtra("appData", data.substring(0, Math.min(8000, data.length())));
         intent.putExtra("prompt", prompt);
         startActivity(intent);
     }
@@ -778,6 +813,12 @@ public final class MainActivity extends Activity {
     private void discover() {
         if (trip == null) {
             heading("GỢI Ý ĐIỂM ĐẾN", "Khám Phá");
+            LinearLayout provinces = card(content, TINT);
+            line(provinces, "Việt Nam qua 63 tỉnh/thành", 21, NAVY, true);
+            line(provinces, "Ẩm thực, thắng cảnh, cà phê, chỗ ở và nhiều hơn nữa.", 13, MUTED, false);
+            gap(provinces, 8);
+            provinces.addView(action("Khám phá 63 tỉnh/thành  ›", NAVY, WHITE,
+                    () -> startActivity(new Intent(this, ProvinceActivity.class))));
             EditText search = field(content, "Tìm nơi, món ăn, chỗ ở", InputType.TYPE_CLASS_TEXT, 100);
             content.addView(action("Tìm trên Google Maps", NAVY, WHITE, () -> {
                 String query = search.getText().toString().trim();
@@ -1051,6 +1092,10 @@ public final class MainActivity extends Activity {
     @Override
     protected void onActivityResult(int request, int result, Intent data) {
         super.onActivityResult(request, result, data);
+        if (request == ACCOUNT_REQUEST) {
+            showTab(tab);
+            return;
+        }
         if (request != 8 || result != RESULT_OK || data == null || data.getData() == null || documentKey == null) return;
         Uri uri = data.getData();
         try {
@@ -1295,23 +1340,27 @@ public final class MainActivity extends Activity {
                 .setPositiveButton("Đóng", null).show();
     }
 
+    private String accountName() {
+        JSONObject session = TravelCloud.session(this);
+        String name = session.optString("name").trim();
+        if (name.isEmpty()) name = session.optString("email").trim();
+        if (name.isEmpty()) name = storage.getString("displayName", "Khách").trim();
+        return name.isEmpty() ? "Khách" : name;
+    }
+
+    private void openAccount() {
+        startActivityForResult(new Intent(this, AccountActivity.class), ACCOUNT_REQUEST);
+    }
+
     private void profile() {
         heading("TRAVEL VN", "Menu");
         LinearLayout account = card(content, WHITE);
-        line(account, "HỒ SƠ TRÊN THIẾT BỊ", 12, BLUE, true);
-        line(account, storage.getString("displayName", "Minh Nguyễn"), 22, NAVY, true);
-        account.addView(action("Sửa tên hiển thị", TINT, BLUE, () -> {
-            LinearLayout fields = column();
-            fields.setPadding(dp(20), 0, dp(20), 0);
-            EditText name = field(fields, "Tên hiển thị", InputType.TYPE_CLASS_TEXT, 48);
-            name.setText(storage.getString("displayName", "Minh Nguyễn"));
-            new AlertDialog.Builder(this).setTitle("Hồ sơ").setView(fields)
-                    .setNegativeButton("Hủy", null).setPositiveButton("Lưu", (dialog, index) -> {
-                        String text = name.getText().toString().trim();
-                        if (!text.isEmpty()) storage.edit().putString("displayName", text).apply();
-                        showTab(MENU);
-                    }).show();
-        }));
+        boolean signedIn = TravelCloud.session(this).has("uid");
+        line(account, "TÀI KHOẢN TRAVEL VN", 12, BLUE, true);
+        line(account, accountName(), 22, NAVY, true);
+        gap(account, 8);
+        account.addView(action(signedIn ? "Hồ sơ và bảo mật  ›" : "Đăng nhập hoặc tạo tài khoản  ›",
+                NAVY, WHITE, this::openAccount));
         LinearLayout group = card(content, WHITE);
         line(group, "CHUYẾN ĐI", 12, BLUE, true);
         group.addView(action("Chuyến đi của bạn  ›", WHITE, NAVY, () -> navigate(TRIPS)));
@@ -1319,10 +1368,12 @@ public final class MainActivity extends Activity {
         group.addView(action("Ví giấy tờ  ›", WHITE, NAVY, () -> documents(trips.get(trips.size() - 1))));
         group.addView(action("Công nợ  ›", WHITE, NAVY, () -> openTrip(trips.get(trips.size() - 1), MONEY)));
         group.addView(action("Địa điểm đã lưu  ›", WHITE, NAVY, this::bookmarks));
-        group.addView(action("Cấu hình Gemini (tùy chọn)  ›", WHITE, NAVY,
-                () -> startActivity(new Intent(this, AssistantActivity.class).putExtra("settings", true))));
+        if (BuildConfig.DEBUG && getString(R.string.travel_backend_url).isEmpty()) {
+            group.addView(action("Kết nối máy chủ thử nghiệm  ›", WHITE, NAVY,
+                    () -> startActivity(new Intent(this, AssistantActivity.class).putExtra("settings", true))));
+        }
         LinearLayout about = card(content, TINT);
-        line(about, "Travel VN · 1.3", 15, BLUE, true);
+        line(about, "Travel VN · " + BuildConfig.VERSION_NAME, 15, BLUE, true);
         line(about, "Tiếng Việt  ·  Dữ liệu lưu trên thiết bị", 14, MUTED, false);
         about.addView(action("Nguồn ảnh điểm đến", WHITE, BLUE, this::photoCredit));
     }
@@ -1399,7 +1450,7 @@ public final class MainActivity extends Activity {
         button.setGravity(Gravity.CENTER);
         button.setMinHeight(dp(48));
         button.setPadding(dp(6), dp(6), dp(6), dp(6));
-        button.setBackground(new RippleDrawable(ColorStateList.valueOf(0x26809BD4), rounded(fill, 14), null));
+        button.setBackground(new RippleDrawable(ColorStateList.valueOf(0x26809BD4), rounded(fill, 22), null));
         button.setOnClickListener(view -> click.run());
         button.setFocusable(true);
         button.setAccessibilityDelegate(new View.AccessibilityDelegate() {
@@ -1420,6 +1471,11 @@ public final class MainActivity extends Activity {
         input.setHint(hint);
         input.setInputType(type);
         input.setSingleLine();
+        GradientDrawable surface = rounded(WHITE, 18);
+        surface.setStroke(dp(1), BORDER);
+        input.setBackground(surface);
+        input.setMinHeight(dp(48));
+        input.setPadding(dp(14), dp(8), dp(14), dp(8));
         input.setFilters(new InputFilter[]{new InputFilter.LengthFilter(limit)});
         parent.addView(input, new LinearLayout.LayoutParams(-1, -2));
         gap(parent, 10);
@@ -1429,7 +1485,7 @@ public final class MainActivity extends Activity {
     private LinearLayout card(LinearLayout parent, int color) {
         LinearLayout card = column();
         card.setPadding(dp(17), dp(15), dp(17), dp(15));
-        GradientDrawable background = rounded(color, 15);
+        GradientDrawable background = rounded(color, 24);
         if (color == WHITE) background.setStroke(dp(1), BORDER);
         card.setBackground(background);
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2);

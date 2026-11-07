@@ -30,14 +30,10 @@ import android.widget.TextView;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public final class AssistantActivity extends Activity {
     private static final int INK = 0xFF112747;
@@ -45,7 +41,7 @@ public final class AssistantActivity extends Activity {
     private static final int PALE = 0xFFF0EDFF;
     private static final int MUTED = 0xFF58677E;
     private static final int WHITE = Color.WHITE;
-    private static String accessToken = "";
+    private static final Pattern PLAN_DAY = Pattern.compile("\\bngay ([1-9][0-9]?)\\b");
     private final List<Turn> history = new ArrayList<>();
     private final List<WebView> widgets = new ArrayList<>();
     private LinearLayout messages;
@@ -54,8 +50,9 @@ public final class AssistantActivity extends Activity {
     private EditText input;
     private TextView send;
     private TextView status;
-    private String endpoint;
     private String context;
+    private String appData;
+    private List<String> days;
     private boolean waiting;
     private TravelCatalog.Destination lastDestination;
 
@@ -64,9 +61,11 @@ public final class AssistantActivity extends Activity {
     @Override
     public void onCreate(Bundle state) {
         super.onCreate(state);
-        endpoint = getPreferences(MODE_PRIVATE).getString("endpoint", "");
         context = getIntent().getStringExtra("trip");
         if (context == null) context = "";
+        appData = getIntent().getStringExtra("appData");
+        if (appData == null) appData = "";
+        days = getIntent().getStringArrayListExtra("days");
         LinearLayout root = column();
         root.setBackgroundColor(WHITE);
         root.setFocusableInTouchMode(true);
@@ -108,7 +107,9 @@ public final class AssistantActivity extends Activity {
         LinearLayout composer = column();
         composer.setPadding(dp(12), dp(6), dp(12), dp(10));
         composer.setBackgroundColor(PALE);
-        status = label(context.isEmpty() ? "Hỏi đáp từ cẩm nang Travel VN." : "Đang hỏi về " + context, 11, MUTED, false);
+        status = label(TravelCloud.available(this) ? (context.isEmpty() ? "Gemini · Hỏi về Travel VN hoặc tra cứu."
+                : "Gemini dùng lịch chuyến " + context + " để hiểu câu hỏi.") : "Cẩm nang trên máy · Gemini chưa kết nối.",
+                11, MUTED, false);
         composer.addView(status);
         LinearLayout box = new LinearLayout(this);
         box.setGravity(Gravity.BOTTOM);
@@ -179,7 +180,7 @@ public final class AssistantActivity extends Activity {
     private void suggestions(String title, String[][] items) {
         LinearLayout card = column();
         card.setPadding(dp(12), dp(9), dp(12), dp(5));
-        card.setBackground(round(0xFFF6F8FD, 15));
+        card.setBackground(round(0xFFF6F8FD, 22));
         LinearLayout.LayoutParams place = new LinearLayout.LayoutParams(-1, -2);
         place.topMargin = dp(12);
         welcome.addView(card, place);
@@ -205,14 +206,13 @@ public final class AssistantActivity extends Activity {
         address.setSingleLine();
         address.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
         address.setHint("https://may-chu-cua-ban/api/chat");
-        address.setText(endpoint);
+        address.setText(TravelCloud.testEndpoint(this));
         fields.addView(address);
         EditText token = new EditText(this);
         token.setSingleLine();
         token.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
         token.setHint("Mã truy cập Travel VN");
         token.setFilters(new InputFilter[]{new InputFilter.LengthFilter(128)});
-        token.setText(accessToken);
         fields.addView(token);
         fields.addView(label("Nhập địa chỉ và mã truy cập của máy chủ Travel VN.", 13, MUTED, false));
         AlertDialog dialog = new AlertDialog.Builder(this).setTitle("Kết nối trợ lý")
@@ -220,7 +220,7 @@ public final class AssistantActivity extends Activity {
         dialog.setOnShowListener(event -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(view -> {
             String next = address.getText().toString().trim();
             String secret = token.getText().toString().trim();
-            if (!validEndpoint(next)) {
+            if (!TravelCloud.validUrl(this, next)) {
                 address.setError("Dùng HTTPS hoặc địa chỉ loopback để thử qua USB");
                 return;
             }
@@ -228,33 +228,16 @@ public final class AssistantActivity extends Activity {
                 token.setError("Nhập mã truy cập máy chủ");
                 return;
             }
-            if (!next.equals(endpoint) || !secret.equals(accessToken)) {
-                history.clear();
-                messages.removeAllViews();
-                releaseSearchWidgets();
-                messages.addView(welcome);
-                welcome.setVisibility(View.VISIBLE);
-            }
-            endpoint = next;
-            accessToken = secret;
-            getPreferences(MODE_PRIVATE).edit().putString("endpoint", endpoint).apply();
+            history.clear();
+            messages.removeAllViews();
+            releaseSearchWidgets();
+            messages.addView(welcome);
+            welcome.setVisibility(View.VISIBLE);
+            TravelCloud.configureTest(this, next, secret);
             status.setText("Đã lưu kết nối. Bạn có thể gửi câu hỏi.");
             dialog.dismiss();
         }));
         dialog.show();
-    }
-
-    private boolean validEndpoint(String value) {
-        try {
-            URI uri = URI.create(value);
-            String host = uri.getHost();
-            if (host == null || uri.getRawUserInfo() != null || uri.getQuery() != null || uri.getFragment() != null) return false;
-            if ("https".equals(uri.getScheme())) return true;
-            boolean debug = (getApplicationInfo().flags & android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0;
-            return debug && "http".equals(uri.getScheme()) && ("127.0.0.1".equals(host) || "10.0.2.2".equals(host));
-        } catch (IllegalArgumentException error) {
-            return false;
-        }
     }
 
     private void send() {
@@ -266,71 +249,70 @@ public final class AssistantActivity extends Activity {
         input.setText("");
         ((InputMethodManager) getSystemService(INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(input.getWindowToken(), 0);
         bubble(question, true);
-        if (endpoint.isEmpty() || accessToken.isEmpty()) {
-            replyFromGuide(question, null);
+        if (!TravelCloud.available(this)) {
+            replyFromGuide(question);
             return;
         }
         status.setText("Đang hỏi Gemini…");
-        final String url = endpoint;
-        final String token = accessToken;
         List<Turn> request = new ArrayList<>(history.subList(Math.max(0, history.size() - 12), history.size()));
         request.add(new Turn("user", question));
         new Thread(() -> {
             try {
-                JSONObject reply = ask(url, token, request);
+                JSONObject reply = ask(request);
                 runOnUiThread(() -> finishTurn(question, reply, null));
             } catch (Exception error) {
-                String message = error instanceof IllegalStateException ? error.getMessage() : "Chưa kết nối được máy chủ trợ lý. Kiểm tra kết nối rồi gửi lại.";
-                runOnUiThread(() -> replyFromGuide(question, message));
+                String message = error instanceof TravelCloud.ApiError ? error.getMessage()
+                        : "Chưa kết nối được máy chủ trợ lý. Kiểm tra mạng rồi gửi lại.";
+                runOnUiThread(() -> finishTurn(question, null, message));
             }
         }, "travel-assistant").start();
     }
 
-    private void replyFromGuide(String question, String connectionError) {
+    private void replyFromGuide(String question) {
         if (isFinishing() || isDestroyed()) return;
         try {
             TravelCatalog.Destination found = LocalTravelGuide.mentioned(question);
-            if (found != null) lastDestination = found;
-            JSONObject reply = LocalTravelGuide.answer(question, context, lastDestination);
-            if (connectionError != null) reply.put("connectionError", connectionError);
+            String words = TravelCatalog.fold(question);
+            Matcher day = PLAN_DAY.matcher(words);
+            JSONObject reply;
+            boolean otherArea = false;
+            String padded = " " + words.replaceAll("[^a-z0-9 ]", " ") + " ";
+            for (String province : ProvinceActivity.PROVINCES) {
+                String area = TravelCatalog.fold(province).replaceAll("[^a-z0-9 ]", " ");
+                if (padded.contains(" " + area + " ") && !province.equals(context)) {
+                    otherArea = true;
+                    break;
+                }
+            }
+            if (days != null && !otherArea && (found == null || found.name().equals(context))
+                    && (words.contains("di dau") || words.contains("lich") || words.contains("lam gi") || words.contains("co gi"))
+                    && day.find() && !words.contains("goi y") && !words.contains("len lich")) {
+                int index = Integer.parseInt(day.group(1));
+                String text = index <= days.size() ? "Lịch ngày " + index + " · " + context + "\n\n" + days.get(index - 1)
+                        : "Chuyến " + context + " có " + days.size() + " ngày trong lịch.";
+                reply = new JSONObject().put("text", text).put("local", true);
+            } else if ((found != null || !otherArea) && LocalTravelGuide.supports(question)) {
+                if (found != null) lastDestination = found;
+                reply = LocalTravelGuide.answer(question, context, lastDestination);
+            } else {
+                JSONObject search = new JSONObject().put("title", "Tìm bằng Google Search")
+                        .put("url", "https://www.google.com/search?q=" + Uri.encode(question));
+                reply = new JSONObject().put("local", true).put("sources", new JSONArray().put(search))
+                        .put("text", "Gemini chưa kết nối. Câu này cần tra cứu thêm, bạn có thể mở Google Search bên dưới.");
+            }
             finishTurn(question, reply, null);
         } catch (org.json.JSONException error) {
             finishTurn(question, null, "Chưa tạo được gợi ý. Bạn thử lại nhé.");
         }
     }
 
-    private JSONObject ask(String url, String token, List<Turn> turns) throws Exception {
-        HttpURLConnection connection = (HttpURLConnection) URI.create(url).toURL().openConnection();
-        try {
-            connection.setRequestMethod("POST");
-            connection.setInstanceFollowRedirects(false);
-            connection.setConnectTimeout(8000);
-            connection.setReadTimeout(48_000);
-            connection.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
-            connection.setRequestProperty("Authorization", "Bearer " + token);
-            connection.setDoOutput(true);
-            JSONArray history = new JSONArray();
-            for (Turn turn : turns) history.put(new JSONObject().put("role", turn.role()).put("text", turn.text()));
-            byte[] data = new JSONObject().put("context", context).put("messages", history).toString().getBytes(StandardCharsets.UTF_8);
-            connection.setFixedLengthStreamingMode(data.length);
-            try (OutputStream stream = connection.getOutputStream()) { stream.write(data); }
-            int code = connection.getResponseCode();
-            try (InputStream stream = code == 200 ? connection.getInputStream() : connection.getErrorStream()) {
-                if (stream == null) throw new IllegalStateException("Máy chủ trợ lý chưa phản hồi.");
-                ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-                byte[] block = new byte[4096];
-                for (int length; (length = stream.read(block)) != -1; ) {
-                    if (bytes.size() + length > 200_000) throw new IllegalStateException("Câu trả lời quá dài.");
-                    bytes.write(block, 0, length);
-                }
-                JSONObject reply = new JSONObject(new String(bytes.toByteArray(), StandardCharsets.UTF_8));
-                if (code != 200) throw new IllegalStateException(reply.optString("error", "Máy chủ trợ lý chưa phản hồi thành công."));
-                if (reply.optString("text").trim().isEmpty()) throw new IllegalStateException("Câu trả lời trống. Bạn thử lại nhé.");
-                return reply;
-            }
-        } finally {
-            connection.disconnect();
-        }
+    private JSONObject ask(List<Turn> turns) throws Exception {
+        JSONArray messages = new JSONArray();
+        for (Turn turn : turns) messages.put(new JSONObject().put("role", turn.role()).put("text", turn.text()));
+        JSONObject reply = TravelCloud.backend(this, "/api/chat",
+                new JSONObject().put("context", appData).put("messages", messages));
+        if (reply.optString("text").trim().isEmpty()) throw new TravelCloud.ApiError("Câu trả lời trống. Bạn thử lại nhé.");
+        return reply;
     }
 
     private void finishTurn(String question, JSONObject reply, String error) {
@@ -365,8 +347,7 @@ public final class AssistantActivity extends Activity {
         }
         String searchHtml = reply.optString("searchHtml");
         if (!searchHtml.isEmpty()) showSearchSuggestions(card, searchHtml);
-        status.setText(local ? (reply.has("connectionError") ? "Đang dùng cẩm nang do Gemini chưa kết nối được."
-                : "Cẩm nang có thể dùng ngay. Thông tin mới xem trong liên kết.") : "Gemini · Hãy kiểm tra nguồn trước khi đặt chỗ.");
+        status.setText(local ? "Dữ liệu trên máy · Gemini chưa kết nối." : "Gemini · Trợ lý Travel VN");
         scroll.post(() -> scroll.smoothScrollTo(0, card.getTop()));
     }
 

@@ -36,7 +36,7 @@ test('chat rejects unauthenticated requests and forwards grounded, contextual co
   assert.equal((await post('Bearer ' + token, { messages: [question], extra: 'x'.repeat(130000) })).status, 413);
   assert.equal(calls.length, 0);
   const reply = await post('Bearer ' + token, {
-    context: 'Ninh Bình, 2 ngày',
+    context: 'Ninh Bình, 2 ngày\nNgày 2: 10:00 ghé Bái Đính',
     messages: [question, { role: 'assistant', text: 'Ghé Tràng An.' }, { role: 'user', text: 'Đi vào buổi nào?' }],
   });
   assert.equal(reply.status, 200);
@@ -52,4 +52,53 @@ test('chat rejects unauthenticated requests and forwards grounded, contextual co
   assert.deepEqual(calls[0].body.tools, [{ googleSearch: {} }, { googleMaps: {} }]);
   assert.deepEqual(calls[0].body.contents.map(turn => turn.role), ['user', 'model', 'user']);
   assert.match(calls[0].body.contents[0].parts[0].text, /Ninh Bình, 2 ngày/);
+  assert.match(calls[0].body.contents[0].parts[0].text, /Ngày 2: 10:00 ghé Bái Đính/);
+  assert.match(calls[0].body.systemInstruction.parts[0].text, /tra Google Search/);
+});
+
+test('places checks the Firebase project and returns scoped results with photo credits', async (t) => {
+  const firebaseProject = 'travel-vn-test';
+  const jwt = (project) => 'header.' + Buffer.from(JSON.stringify({
+    aud: project, iss: 'https://securetoken.google.com/' + project, sub: 'user-1',
+  })).toString('base64url') + '.signature';
+  const calls = [];
+  const server = createChatServer({
+    placesKey: 'test-places-key', firebaseKey: 'test-firebase-key', firebaseProject,
+    callGoogle: async (url, options) => {
+      calls.push(url);
+      if (url.includes('accounts:lookup')) {
+        assert.equal(JSON.parse(options.body).idToken, jwt(firebaseProject));
+        return Response.json({ users: [{ localId: 'user-1' }] });
+      }
+      assert.equal(options.headers['X-Goog-Api-Key'], 'test-places-key');
+      if (url.endsWith(':searchText')) {
+        assert.match(JSON.parse(options.body).textQuery, /quán cà phê tại khu vực Lâm Đồng/);
+        return Response.json({ places: [{
+          displayName: { text: 'Quán thử' }, formattedAddress: 'Lâm Đồng',
+          googleMapsUri: 'https://maps.google.com/?cid=12',
+          photos: [{ name: 'places/demo/photos/img', authorAttributions: [{ displayName: 'Tác giả' }] }],
+        }] });
+      }
+      assert.match(url, /\/places\/demo\/photos\/img\/media\?/);
+      return Response.json({ photoUri: 'https://lh3.googleusercontent.com/test-photo' });
+    },
+  }).listen(0, '127.0.0.1');
+  t.after(() => server.close());
+  await once(server, 'listening');
+  const post = (token, body) => fetch('http://127.0.0.1:' + server.address().port + '/api/places', {
+    method: 'POST', headers: { authorization: 'Bearer ' + token }, body: JSON.stringify(body),
+  });
+  const query = { province: 'Lâm Đồng', category: 'Cà phê' };
+  assert.equal((await post(jwt('other-project'), query)).status, 401);
+  assert.equal(calls.length, 0);
+  assert.equal((await post(jwt(firebaseProject), { ...query, province: { trim: 'invalid' } })).status, 400);
+  const response = await post(jwt(firebaseProject), query);
+  assert.equal(response.status, 200);
+  const result = await response.json();
+  assert.deepEqual(result.places, [{
+    title: 'Quán thử', address: 'Lâm Đồng', url: 'https://maps.google.com/?cid=12',
+    photoUrl: 'https://lh3.googleusercontent.com/test-photo',
+    authors: [{ displayName: 'Tác giả' }], attributions: [],
+  }]);
+  assert.doesNotMatch(JSON.stringify(result), /test-places-key|test-firebase-key/);
 });

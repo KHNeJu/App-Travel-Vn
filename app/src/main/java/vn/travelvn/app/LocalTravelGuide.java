@@ -22,6 +22,14 @@ final class LocalTravelGuide {
         return null;
     }
 
+    static boolean supports(String question) {
+        String words = TravelCatalog.fold(question);
+        return has(words, "chia tien", "chia chi", "ung tien", "cong no", "hanh ly", "dong goi",
+                "du lich", "di choi", "di dau", "tham quan", "choi gi", "lo trinh", "lich trinh",
+                "khach san", "homestay", "cho o", "dat phong", "o dau", "ca phe",
+                "an gi", "quan an", "dac san", "thoi tiet", "gio mo cua");
+    }
+
     static JSONObject answer(String question, String context, TravelCatalog.Destination recent) throws JSONException {
         String words = TravelCatalog.fold(question);
         TravelCatalog.Destination city = mentioned(question);

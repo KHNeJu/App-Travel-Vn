@@ -9,6 +9,8 @@
         <activity android:name=".AssistantActivity" android:exported="false"
             android:windowSoftInputMode="adjustResize" />
         <activity android:name=".RouteActivity" android:exported="false" />
+        <activity android:name=".AccountActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".ProvinceActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
