@@ -57,6 +57,7 @@ public final class AssistantActivity extends Activity {
     private String endpoint;
     private String context;
     private boolean waiting;
+    private TravelCatalog.Destination lastDestination;
 
     private record Turn(String role, String text) {}
 
@@ -88,7 +89,6 @@ public final class AssistantActivity extends Activity {
         LinearLayout top = new LinearLayout(this);
         top.setGravity(Gravity.END);
         top.setPadding(dp(12), 0, dp(12), 0);
-        top.addView(button("Kết nối AI", PALE, PURPLE, this::configure));
         TextView close = button("×", WHITE, INK, this::finish);
         close.setTextSize(24);
         close.setContentDescription("Đóng trợ lý");
@@ -108,7 +108,7 @@ public final class AssistantActivity extends Activity {
         LinearLayout composer = column();
         composer.setPadding(dp(12), dp(6), dp(12), dp(10));
         composer.setBackgroundColor(PALE);
-        status = label(context.isEmpty() ? "Trợ lý dùng Gemini và nguồn Google khi khả dụng." : "Đang hỏi về " + context, 11, MUTED, false);
+        status = label(context.isEmpty() ? "Hỏi đáp từ cẩm nang Travel VN." : "Đang hỏi về " + context, 11, MUTED, false);
         composer.addView(status);
         LinearLayout box = new LinearLayout(this);
         box.setGravity(Gravity.BOTTOM);
@@ -134,6 +134,7 @@ public final class AssistantActivity extends Activity {
         root.requestFocus();
         String prompt = getIntent().getStringExtra("prompt");
         if (prompt != null && !prompt.isEmpty()) input.setText(prompt);
+        if (getIntent().getBooleanExtra("settings", false)) configure();
     }
 
     private void welcome() {
@@ -259,16 +260,16 @@ public final class AssistantActivity extends Activity {
     private void send() {
         String question = input.getText().toString().trim();
         if (waiting || question.isEmpty()) return;
-        if (endpoint.isEmpty() || accessToken.isEmpty()) {
-            configure();
-            return;
-        }
         waiting = true;
         send.setEnabled(false);
         welcome.setVisibility(View.GONE);
         input.setText("");
         ((InputMethodManager) getSystemService(INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(input.getWindowToken(), 0);
         bubble(question, true);
+        if (endpoint.isEmpty() || accessToken.isEmpty()) {
+            replyFromGuide(question, null);
+            return;
+        }
         status.setText("Đang hỏi Gemini…");
         final String url = endpoint;
         final String token = accessToken;
@@ -280,9 +281,22 @@ public final class AssistantActivity extends Activity {
                 runOnUiThread(() -> finishTurn(question, reply, null));
             } catch (Exception error) {
                 String message = error instanceof IllegalStateException ? error.getMessage() : "Chưa kết nối được máy chủ trợ lý. Kiểm tra kết nối rồi gửi lại.";
-                runOnUiThread(() -> finishTurn(question, null, message));
+                runOnUiThread(() -> replyFromGuide(question, message));
             }
         }, "travel-assistant").start();
+    }
+
+    private void replyFromGuide(String question, String connectionError) {
+        if (isFinishing() || isDestroyed()) return;
+        try {
+            TravelCatalog.Destination found = LocalTravelGuide.mentioned(question);
+            if (found != null) lastDestination = found;
+            JSONObject reply = LocalTravelGuide.answer(question, context, lastDestination);
+            if (connectionError != null) reply.put("connectionError", connectionError);
+            finishTurn(question, reply, null);
+        } catch (org.json.JSONException error) {
+            finishTurn(question, null, "Chưa tạo được gợi ý. Bạn thử lại nhé.");
+        }
     }
 
     private JSONObject ask(String url, String token, List<Turn> turns) throws Exception {
@@ -335,6 +349,8 @@ public final class AssistantActivity extends Activity {
         history.add(new Turn("assistant", answer.substring(0, Math.min(6500, answer.length()))));
         if (history.size() > 12) history.subList(0, 2).clear();
         LinearLayout card = bubble(answer.replace("**", ""), false);
+        boolean local = reply.optBoolean("local");
+        if (local) card.addView(label("Cẩm nang Travel VN · Dữ liệu trên máy", 11, MUTED, false), 0);
         JSONArray sources = reply.optJSONArray("sources");
         if (sources != null && sources.length() > 0) {
             card.addView(label("Nguồn tham khảo", 13, PURPLE, true));
@@ -349,7 +365,8 @@ public final class AssistantActivity extends Activity {
         }
         String searchHtml = reply.optString("searchHtml");
         if (!searchHtml.isEmpty()) showSearchSuggestions(card, searchHtml);
-        status.setText("Gemini có thể sai. Hãy kiểm tra nguồn trước khi đặt chỗ.");
+        status.setText(local ? (reply.has("connectionError") ? "Đang dùng cẩm nang do Gemini chưa kết nối được."
+                : "Cẩm nang có thể dùng ngay. Thông tin mới xem trong liên kết.") : "Gemini · Hãy kiểm tra nguồn trước khi đặt chỗ.");
         scroll.post(() -> scroll.smoothScrollTo(0, card.getTop()));
     }
 
