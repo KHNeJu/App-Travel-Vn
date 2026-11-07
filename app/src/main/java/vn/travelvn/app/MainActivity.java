@@ -91,6 +91,7 @@ public final class MainActivity extends Activity {
 
         root = column();
         root.setBackgroundColor(PAGE);
+        setContentView(root);
         if (Build.VERSION.SDK_INT >= 30) {
             getWindow().setDecorFitsSystemWindows(false);
             WindowInsetsController controller = getWindow().getInsetsController();
@@ -109,7 +110,6 @@ public final class MainActivity extends Activity {
         } else {
             getWindow().setNavigationBarColor(NAVY);
         }
-        setContentView(root);
         showTab(tab);
     }
 
@@ -373,7 +373,7 @@ public final class MainActivity extends Activity {
         line(group, "Nhóm du lịch · 5 thành viên", 17, NAVY, true);
         line(group, String.join("  ·  ", PEOPLE), 14, MUTED, false);
         LinearLayout about = card(content, TINT);
-        line(about, "Travel VN · Bản thử nghiệm 1.0", 15, BLUE, true);
+        line(about, "Travel VN · Bản thử nghiệm 1.0.1", 15, BLUE, true);
         line(about, "Tiếng Việt  ·  Dữ liệu lưu trên thiết bị", 14, MUTED, false);
     }
 
