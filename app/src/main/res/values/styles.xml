@@ -2,10 +2,10 @@
 <resources>
     <string name="app_name">Travel VN</string>
     <style name="AppTheme" parent="android:style/Theme.Material.Light.NoActionBar">
-        <item name="android:colorAccent">#1458CC</item>
-        <item name="android:windowBackground">#F1F5FC</item>
+        <item name="android:colorAccent">#2664DE</item>
+        <item name="android:windowBackground">#F5F7FC</item>
         <item name="android:windowLightStatusBar">true</item>
-        <item name="android:statusBarColor">#F1F5FC</item>
+        <item name="android:statusBarColor">#F5F7FC</item>
         <item name="android:navigationBarColor">#FFFFFF</item>
     </style>
 </resources>

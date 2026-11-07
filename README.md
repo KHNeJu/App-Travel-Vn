@@ -18,6 +18,11 @@ APK được tạo tại `app/build/outputs/apk/debug/app-debug.apk`.
 
 ## Thử các luồng chính
 
-- Mở chuyến đi Ninh Bình và chuyển giữa ba ngày.
-- Nhập điểm đến, số người, ngân sách và sở thích để xem bản xem trước. Bản thử nghiệm dùng lịch trình mẫu và lưu các khoản chi của chuyến Ninh Bình ngay trên thiết bị.
-- Trong **Chi tiêu**, thêm khoản chi 100.001 ₫. Tổng tăng từ 6.550.000 ₫ lên 6.650.001 ₫, phần của bạn tăng từ 1.310.000 ₫ lên 1.330.001 ₫. Mở **Xem gợi ý quyết toán** để xem các khoản cần chuyển.
+- Từ **Trang chủ**, mở chuyến đi Ninh Bình, chuyển ngày, rồi bấm vào hoạt động để chỉnh giờ hoặc tên.
+- Bấm nút ✦ để nhập điểm đến, số ngày, số người và ngân sách. Xem trước rồi bấm **Lưu lịch trình** để lưu chuyến đi riêng.
+- Mở tab **Tiền** của chuyến đi để ghi khoản chi, chọn người trả và những người cần chia. **Xem công nợ** gợi ý các khoản chuyển. Dữ liệu của chuyến Ninh Bình từ bản trước vẫn dùng được.
+- **Hành lý**, **Tài liệu** và **Nhật ký** lưu theo từng chuyến trên thiết bị. Mục **Thành viên** chia sẻ kế hoạch dạng văn bản.
+
+Lịch trình tạo từ mẫu có sẵn. Danh sách khám phá và lịch theo ngày tháng dùng dữ liệu Ninh Bình mẫu.
+
+Ảnh bìa Tràng An của Jakub Hałun, giấy phép [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Ảnh được thu nhỏ và cắt khung khi hiển thị. [Ảnh gốc trên Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Trang_An_Landscape_Complex,_Ninh_Binh_Province,_Vietnam,_20240202_1428_5272.jpg).
