@@ -9,6 +9,10 @@ final class TravelCatalog {
     record Place(String city, String name, String category, String tip, double lat, double lon) {}
 
     static final Destination[] DESTINATIONS = {
+        new Destination("Nha Trang", R.drawable.nha_trang,
+                "Dạo biển, khám phá các đảo trong vịnh rồi ghé Bảo tàng Hải dương học.",
+                "Thử bún cá và hải sản địa phương.", "Tìm chỗ nghỉ gần bãi biển nếu muốn tiện đi dạo.",
+                12.24, 109.197, "Tony24986", "BY-SA 4.0", "Panorama_of_Vịnh_Nha_Trang_coastline.jpg"),
         new Destination("Phú Quốc", R.drawable.phu_quoc, "Bãi biển, cáp treo và những buổi tối ở Dương Đông.",
                 "Bún quậy, gỏi cá trích và hải sản. Nên hỏi giá theo phần hoặc theo cân trước khi gọi.",
                 "Dương Đông thuận tiện ăn uống. Chọn An Thới nếu phần lớn lịch ở Nam đảo.", 10.22, 103.96,
@@ -40,6 +44,8 @@ final class TravelCatalog {
     };
 
     static final Place[] PLACES = {
+        new Place("Nha Trang", "Bảo tàng Hải dương học", "Tham quan", "Tìm hiểu các loài sinh vật biển.", 12.207, 109.214),
+        new Place("Nha Trang", "Hòn Mun", "Thiên nhiên", "Tham khảo các chuyến tham quan đảo khởi hành từ Nha Trang.", 12.169, 109.303),
         new Place("Ninh Bình", "Cố đô Hoa Lư", "Tham quan", "Ghé khu đền và di tích của cố đô.", 20.28285, 105.90175),
         new Place("Ninh Bình", "Tràng An", "Thiên nhiên", "Chọn tuyến đi thuyền phù hợp với thời gian của nhóm.", 20.2503, 105.9186),
         new Place("Ninh Bình", "Hang Múa", "Thiên nhiên", "Leo bậc đá để ngắm cánh đồng và núi đá vôi.", 20.2297, 105.9360),

@@ -1,6 +1,5 @@
 package vn.travelvn.app;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.DatePickerDialog;
 import android.content.ActivityNotFoundException;
@@ -23,6 +22,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -50,23 +51,25 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
-public final class MainActivity extends Activity {
+public final class MainActivity extends TravelScreen {
     private static final int BLUE = 0xFF265FC4;
     private static final int NAVY = 0xFF102746;
     private static final int MUTED = 0xFF52647E;
-    private static final int PAGE = 0xFFF5F7FC;
+    private static final int PAGE = 0xFFF3F8FC;
     private static final int TINT = 0xFFEAF1FF;
     private static final int BORDER = 0xFFE8EDF5;
     private static final int WHITE = Color.WHITE;
     private static final int GREEN = 0xFF086644;
     private static final int RED = 0xFFAA3030;
     private static final String[] TABS = {"Trang chủ", "Khám phá", "Kỷ niệm", "Menu"};
+    private static final String[] EXPLORE_FILTERS = {"Tất cả", "Cẩm nang", "Chỗ ở", "Tham quan", "Ăn uống",
+            "Biển", "Thiên nhiên", "Cà phê", "Lịch sử", "Giải trí", "Mua sắm"};
     private static final int HOME = 0, EXPLORE = 1, MEMORIES = 2, MENU = 3, TRIPS = 4, CALENDAR = 5;
     private static final int PLAN = 0, TRIP_EXPLORE = 1, GUIDE = 2, MONEY = 3, JOURNAL = 4;
     private static final int ACCOUNT_REQUEST = 42;
-    private static final int[] NAV_ICONS = {0, 2, 3, 4};
+    private static final int[] NAV_ICONS = {0, 2, 8, 9};
     private static final String[] SECTIONS = {"Kế hoạch", "Khám phá", "Cẩm nang", "Chi tiêu", "Nhật ký"};
-    private static final String[] DESTINATIONS = {"Phú Quốc", "Huế", "Sa Pa", "Quy Nhơn", "Đà Lạt", "Hội An", "Phú Yên", "Mũi Né", "Ninh Bình", "Đà Nẵng"};
+    private static final String[] DESTINATIONS = {"Phú Quốc", "Nha Trang", "Huế", "Sa Pa", "Quy Nhơn", "Đà Lạt", "Hội An", "Phú Yên", "Mũi Né", "Ninh Bình", "Đà Nẵng"};
     private static final String[] PEOPLE = {"Bạn", "Linh", "An", "Huy", "Mai"};
     private static final String[] PACKING = {"Giấy tờ tùy thân", "Sạc điện thoại", "Đồ vệ sinh cá nhân", "Áo khoác nhẹ", "Giày đi bộ", "Thuốc cá nhân"};
     private static final String[] DAY_NAMES = {"Cố đô & Tràng An", "Bái Đính & Thung Nham", "Tam Cốc thong thả"};
@@ -95,6 +98,8 @@ public final class MainActivity extends Activity {
     private Trip trip;
     private String discoverFilter = "Tất cả";
     private String exploreCity = "";
+    private int exploreCategory;
+    private String exploreQuery = "";
     private String documentKey;
     private int wizardStep = -1;
     private String destination = "";
@@ -125,6 +130,9 @@ public final class MainActivity extends Activity {
             day = state.getInt("day");
             section = state.getInt("tripSection");
             documentKey = state.getString("documentKey");
+            exploreCity = state.getString("exploreCity", "");
+            exploreCategory = state.getInt("exploreCategory");
+            exploreQuery = state.getString("exploreQuery", "");
             wizardStep = state.getInt("wizardStep", -1);
             destination = state.getString("destination", "");
             startAt = state.getLong("startAt");
@@ -175,6 +183,9 @@ public final class MainActivity extends Activity {
         state.putString("destination", destination);
         state.putLong("startAt", startAt);
         state.putLong("endAt", endAt);
+        state.putString("exploreCity", exploreCity);
+        state.putInt("exploreCategory", exploreCategory);
+        state.putString("exploreQuery", exploreQuery);
         state.putLong("tripBudget", tripBudget);
         state.putInt("travelers", travelers);
         state.putStringArrayList("chosenStops", new ArrayList<>(chosenStops));
@@ -197,14 +208,17 @@ public final class MainActivity extends Activity {
     private void navigate(int selected) {
         trip = null;
         discoverFilter = "Tất cả";
-        if (selected == EXPLORE) exploreCity = "";
         showTab(selected);
     }
 
     private void openTrip(Trip selected, int selectedSection) {
+        openTrip(selected, selectedSection, 0);
+    }
+
+    private void openTrip(Trip selected, int selectedSection, int selectedDay) {
         trip = selected;
         section = selectedSection;
-        day = 0;
+        day = selectedDay;
         discoverFilter = "Tất cả";
         showTab(TRIPS);
     }
@@ -236,7 +250,7 @@ public final class MainActivity extends Activity {
             floating.setBackground(rounded(NAVY, 30));
             floating.setContentDescription("Hỏi AI");
             floating.setElevation(dp(5));
-            FrameLayout.LayoutParams pos = new FrameLayout.LayoutParams(dp(72), dp(45), Gravity.BOTTOM | Gravity.END);
+            FrameLayout.LayoutParams pos = new FrameLayout.LayoutParams(dp(80), dp(48), Gravity.BOTTOM | Gravity.END);
             pos.setMargins(dp(12), 0, dp(17), dp(14));
             body.addView(floating, pos);
         }
@@ -251,8 +265,12 @@ public final class MainActivity extends Activity {
             item.setBackground(new RippleDrawable(ColorStateList.valueOf(TINT), rounded(WHITE, 8), null));
             boolean active = i == tab || i == HOME && (tab == TRIPS || tab == CALENDAR);
             int color = active ? NAVY : MUTED;
-            item.addView(new TravelIcon(this, NAV_ICONS[i], color), new LinearLayout.LayoutParams(dp(21), dp(21)));
-            TextView label = line(item, TABS[i], 10, color, active);
+            FrameLayout badge = new FrameLayout(this);
+            badge.setBackground(rounded(active ? TINT : WHITE, 19));
+            badge.addView(new TravelIcon(this, NAV_ICONS[i], color),
+                    new FrameLayout.LayoutParams(dp(21), dp(21), Gravity.CENTER));
+            item.addView(badge, new LinearLayout.LayoutParams(dp(51), dp(29)));
+            TextView label = line(item, TABS[i], 11, color, active);
             label.setGravity(Gravity.CENTER);
             item.setContentDescription(TABS[i]);
             item.setSelected(active);
@@ -260,51 +278,376 @@ public final class MainActivity extends Activity {
             item.setOnClickListener(view -> navigate(index));
             nav.addView(item, new LinearLayout.LayoutParams(0, -1, 1));
         }
+        if (trip == null && tab == MENU && !signedIn()) menuGuestFooter();
         root.addView(nav, new LinearLayout.LayoutParams(-1, dp(60)));
     }
 
     private void home() {
+        boolean signedIn = TravelCloud.session(this).has("uid");
+        Trip active = signedIn ? homeTrip() : null;
         LinearLayout header = row();
         header.setGravity(Gravity.CENTER_VERTICAL);
-        String name = accountName();
-        TextView avatar = action(name.substring(0, name.offsetByCodePoints(0, 1)).toUpperCase(Locale.ROOT),
-                TINT, BLUE, this::openAccount);
-        avatar.setContentDescription("Hồ sơ cá nhân");
-        avatar.setBackground(rounded(TINT, 24));
+        String name = signedIn ? accountName() : "Du khách";
+        String[] words = name.split("\\s+");
+        String initials = initials(words[0]) + (words.length > 1 ? initials(words[words.length - 1]) : "");
+        TextView avatar = action(initials, TINT, NAVY, this::openAccount);
+        avatar.setContentDescription(signedIn ? "Hồ sơ cá nhân" : "Đăng nhập Travel VN");
         header.addView(avatar, new LinearLayout.LayoutParams(dp(44), dp(44)));
         LinearLayout greeting = column();
-        greeting.setPadding(dp(10), 0, 0, 0);
+        greeting.setPadding(dp(12), 0, dp(8), 0);
         header.addView(greeting, new LinearLayout.LayoutParams(0, -2, 1));
-        line(greeting, "Chào bạn ☀", 12, MUTED, false);
-        line(greeting, name, 19, NAVY, true);
-        TextView tripsButton = action("▤", WHITE, NAVY, () -> navigate(TRIPS));
-        tripsButton.setContentDescription("Chuyến đi của bạn");
-        header.addView(tripsButton, new LinearLayout.LayoutParams(dp(45), dp(45)));
+        int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
+        line(greeting, hour < 12 ? "Chào buổi sáng ☀" : hour < 18 ? "Chào buổi chiều ☀" : "Chào buổi tối ☾",
+                13, MUTED, false);
+        TextView displayName = line(greeting, name, 18, NAVY, true);
+        displayName.setMaxLines(1);
+        displayName.setEllipsize(TextUtils.TruncateAt.END);
+        header.addView(homeIcon(5, TINT, "Thông báo", () -> homeReminders(active)),
+                new LinearLayout.LayoutParams(dp(48), dp(48)));
         content.addView(header);
-        gap(content, 12);
-        Trip upcoming = trips.get(trips.size() - 1);
-        tripCard(upcoming, true);
-        if (trips.size() == 1) {
-            LinearLayout start = card(content, WHITE);
-            line(start, "Bắt đầu với Travel VN", 17, NAVY, true);
-            line(start, "Lên kế hoạch, thêm điểm đến và chia chi tiêu cùng nhóm.", 13, MUTED, false);
-            start.addView(action("Lên kế hoạch cho nhóm", NAVY, WHITE, this::createTrip));
+        gap(content, 23);
+        int today = active == null ? -1 : tripToday(active);
+        homeHero(active, today);
+        if (active == null) {
+            if (!storage.getBoolean("hideHomeChecklist", false)) homeChecklist();
+        } else if (today >= 0) {
+            homeTripToday(active, today);
         }
-        shortcuts(upcoming);
-        line(content, "Quanh bạn", 19, NAVY, true);
-        line(content, "Gợi ý địa điểm ở Ninh Bình", 12, MUTED, false);
+        homeShortcuts(active, today);
+        homeNearby(active);
+        if (signedIn) homeRecentTrips();
+        visitedCard();
+        gap(content, 64);
+    }
+
+    private String initials(String word) {
+        return word.substring(0, word.offsetByCodePoints(0, 1)).toUpperCase(Locale.ROOT);
+    }
+
+    private Trip homeTrip() {
+        long today = dayStart(System.currentTimeMillis());
+        Trip upcoming = null;
+        for (int index = trips.size() - 1; index > 0; index--) {
+            Trip item = trips.get(index);
+            if (item.startAt() <= 0) continue;
+            long start = dayStart(item.startAt());
+            if (start <= today && addDays(start, item.days()) > today) return item;
+            if (start > today && (upcoming == null || item.startAt() < upcoming.startAt())) upcoming = item;
+        }
+        return upcoming;
+    }
+
+    private long dayStart(long timestamp) {
+        Calendar date = Calendar.getInstance();
+        date.setTimeInMillis(timestamp);
+        date.set(Calendar.HOUR_OF_DAY, 0);
+        date.set(Calendar.MINUTE, 0);
+        date.set(Calendar.SECOND, 0);
+        date.set(Calendar.MILLISECOND, 0);
+        return date.getTimeInMillis();
+    }
+
+    private int tripToday(Trip item) {
+        long today = dayStart(System.currentTimeMillis());
+        long start = dayStart(item.startAt());
+        if (item.startAt() <= 0 || today < start) return -1;
+        for (int day = 0; day < item.days(); day++) {
+            if (today < addDays(start, day + 1)) return day;
+        }
+        return -1;
+    }
+
+    private void homeHero(Trip active, int today) {
+        TravelCatalog.Destination city = TravelCatalog.destination(active == null ? "Nha Trang" : active.destination());
+        FrameLayout hero = new FrameLayout(this);
+        hero.setBackground(rounded(TINT, 23));
+        hero.setClipToOutline(true);
+        if (city != null) {
+            ImageView image = new ImageView(this);
+            image.setImageResource(city.image());
+            image.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            image.setContentDescription("Ảnh " + city.name() + " của " + city.author());
+            hero.addView(image, new FrameLayout.LayoutParams(-1, -1));
+        } else {
+            hero.addView(new TravelIcon(this, 2, BLUE),
+                    new FrameLayout.LayoutParams(dp(64), dp(64), Gravity.CENTER));
+        }
+        if (active != null) {
+            TextView state = new TextView(this);
+            state.setText(today >= 0 ? "●  Đang diễn ra" : "●  Sắp khởi hành");
+            state.setTextColor(NAVY);
+            state.setTextSize(12);
+            state.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+            state.setPadding(dp(12), dp(7), dp(12), dp(7));
+            state.setBackground(rounded(WHITE, 18));
+            FrameLayout.LayoutParams position = new FrameLayout.LayoutParams(-2, -2, Gravity.TOP | Gravity.START);
+            position.setMargins(dp(12), dp(12), dp(12), 0);
+            hero.addView(state, position);
+        }
+        content.addView(hero, new LinearLayout.LayoutParams(-1, dp(210)));
+        gap(content, 13);
+        String tag = active == null ? "GỢI Ý CHO BẠN · 3 NGÀY" : today >= 0
+                ? "NGÀY " + (today + 1) + "/" + active.days() + " · " + active.people() + " NGƯỜI"
+                : tripDates(active) + " · " + tripMeta(active).toUpperCase(Locale.ROOT);
+        line(content, tag, 12, BLUE, true).setLetterSpacing(0.08f);
+        gap(content, 5);
+        line(content, active == null ? "Khám phá Nha Trang" : active.destination(), 32, NAVY, true);
+        gap(content, 4);
+        List<String> plan = today >= 0 ? activities(active, today) : java.util.Collections.emptyList();
+        String detail = active == null ? city.description() : today < 0 ? active.title()
+                : plan.isEmpty() ? "Bạn có thể thêm điểm dừng cho hôm nay." : "Trong lịch hôm nay · " + plan.get(0).substring(5).trim();
+        line(content, detail, 14, MUTED, false).setLineSpacing(dp(3), 1);
+        gap(content, 13);
+        TextView primary = action(active == null ? "Lên kế hoạch cho nhóm"
+                        : today >= 0 ? "Xem lịch trình hôm nay" : "Xem lịch trình chuyến đi", NAVY, WHITE,
+                () -> { if (active == null) createTrip("Nha Trang"); else openTrip(active, PLAN, Math.max(today, 0)); });
+        primary.setTextSize(15);
+        primary.setMinHeight(dp(49));
+        content.addView(primary);
+        gap(content, 22);
+    }
+
+    private void homeReminders(Trip active) {
+        String detail = active == null ? "Bạn chưa có nhắc việc cho chuyến đi."
+                : active.title() + " · " + tripDates(active) + "\nHành lý đã chuẩn bị " + packedCount(active) + "/" + PACKING.length;
+        new AlertDialog.Builder(this).setTitle("Nhắc việc chuyến đi").setMessage(detail)
+                .setNegativeButton("Đóng", null).setPositiveButton("Chuyến đi của bạn", (d, w) -> navigate(TRIPS)).show();
+    }
+
+    private void homeChecklist() {
+        Trip latest = trips.size() > 1 ? trips.get(trips.size() - 1) : null;
+        String style = storage.getString("travelStyle", "");
+        boolean[] done = {!style.isEmpty(), latest != null, storage.getBoolean("openedSharePlan", false),
+                latest != null && savedArray("expenses:" + latest.id()).length() > 0};
+        int count = 0;
+        for (boolean value : done) if (value) count++;
+        LinearLayout panel = card(content, WHITE);
+        LinearLayout title = row();
+        title.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout text = column();
+        line(text, "Bắt đầu với Travel VN", 19, NAVY, true);
+        line(text, count + "/4 việc · khoảng 3 phút", 13, MUTED, false);
+        title.addView(text, new LinearLayout.LayoutParams(0, -2, 1));
+        TextView close = action("×", WHITE, MUTED, () -> {
+            storage.edit().putBoolean("hideHomeChecklist", true).apply();
+            panel.setVisibility(View.GONE);
+        });
+        close.setTextSize(21);
+        close.setContentDescription("Ẩn hướng dẫn bắt đầu");
+        title.addView(close, new LinearLayout.LayoutParams(dp(48), dp(48)));
+        panel.addView(title);
+        ProgressBar progress = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
+        progress.setMax(done.length);
+        progress.setProgress(count);
+        progress.setProgressTintList(ColorStateList.valueOf(BLUE));
+        panel.addView(progress, new LinearLayout.LayoutParams(-1, dp(9)));
+        gap(panel, 5);
+        String[] tasks = {"Chọn phong cách du lịch", "Tạo chuyến đầu tiên", "Chia sẻ kế hoạch", "Ghi khoản chi đầu tiên"};
+        for (int index = 0; index < tasks.length; index++) {
+            int selected = index;
+            LinearLayout step = row();
+            step.setGravity(Gravity.CENTER_VERTICAL);
+            TextView name = line(step, (done[index] ? "✓  " : "○  ") + tasks[index], 14, NAVY, true);
+            name.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
+            TextView open = action(done[index] ? "Xem" : "Làm", WHITE, BLUE, () -> {
+                if (selected == 0) chooseTravelStyle();
+                else if (latest == null) createTrip();
+                else if (selected == 1) openTrip(latest, PLAN);
+                else if (selected == 2) shareTrip(latest);
+                else openTrip(latest, MONEY);
+            });
+            open.setContentDescription(tasks[index]);
+            step.addView(open, new LinearLayout.LayoutParams(dp(49), dp(48)));
+            panel.addView(step);
+            if (index < tasks.length - 1) {
+                View divider = new View(this);
+                divider.setBackgroundColor(BORDER);
+                panel.addView(divider, new LinearLayout.LayoutParams(-1, dp(1)));
+            }
+        }
+    }
+
+    private void chooseTravelStyle() {
+        String[] styles = {"Nghỉ dưỡng", "Ẩm thực", "Thiên nhiên", "Văn hóa"};
+        new AlertDialog.Builder(this).setTitle("Phong cách du lịch").setItems(styles, (dialog, selected) -> {
+            storage.edit().putString("travelStyle", styles[selected]).apply();
+            showTab(HOME);
+        }).setNegativeButton("Đóng", null).show();
+    }
+
+    private void homeTripToday(Trip item, int today) {
+        LinearLayout weather = card(content, TINT);
+        line(weather, "THỜI TIẾT", 11, BLUE, true).setLetterSpacing(0.09f);
+        line(weather, "Dự báo tại " + item.destination(), 17, NAVY, true);
+        line(weather, "Kiểm tra trước khi ra ngoài theo lịch hôm nay.", 13, MUTED, false);
+        weather.addView(action("Xem dự báo hôm nay", WHITE, NAVY,
+                () -> openLink("https://www.google.com/search?q=" + Uri.encode("thời tiết hôm nay " + item.destination()))));
         gap(content, 8);
-        filters();
-        places(false);
-        line(content, "Điểm đến nổi bật", 19, NAVY, true);
+        String key = "lodging:" + item.id() + ":" + dateText(addDays(item.startAt(), today), "yyyy-MM-dd");
+        String lodging = storage.getString(key, "");
+        line(content, lodging.isEmpty() ? "Đêm nay chưa lưu chỗ ở" : "Chỗ ở đêm nay", 21, NAVY, true);
+        line(content, dateText(addDays(item.startAt(), today), "d/M") + " · " + item.people() + " người", 13, MUTED, false);
         gap(content, 8);
-        destinationGallery();
-        gap(content, 45);
+        LinearLayout stay = card(content, 0xFFFFF0E4);
+        line(stay, lodging.isEmpty() ? "Tìm chỗ ở tại " + item.destination() : lodging, 17, NAVY, true);
+        stay.addView(action("Xem chỗ ở trên Google Maps", WHITE, BLUE,
+                () -> openMaps(lodging.isEmpty() ? "khách sạn và homestay " + item.destination() : lodging + " " + item.destination())));
+        stay.addView(action(lodging.isEmpty() ? "Đã đặt rồi? Thêm vào chuyến" : "Sửa chỗ ở",
+                0xFFFFF0E4, BLUE, () -> editLodging(key, lodging)));
+    }
+
+    private void editLodging(String key, String lodging) {
+        LinearLayout fields = column();
+        fields.setPadding(dp(20), 0, dp(20), 0);
+        EditText name = field(fields, "Tên chỗ ở", InputType.TYPE_CLASS_TEXT, 120);
+        name.setText(lodging);
+        new AlertDialog.Builder(this).setTitle("Chỗ ở đêm nay").setView(fields)
+                .setNegativeButton("Hủy", null).setPositiveButton("Lưu", (dialog, which) -> {
+                    storage.edit().putString(key, name.getText().toString().trim()).apply();
+                    showTab(HOME);
+                }).show();
+    }
+
+    private View homeIcon(int icon, int fill, String description, Runnable click) {
+        FrameLayout tile = new FrameLayout(this);
+        tile.setBackground(new RippleDrawable(ColorStateList.valueOf(0x26809BD4), rounded(fill, 18), null));
+        tile.addView(new TravelIcon(this, icon, NAVY),
+                new FrameLayout.LayoutParams(dp(23), dp(23), Gravity.CENTER));
+        tile.setContentDescription(description);
+        tile.setFocusable(true);
+        tile.setOnClickListener(view -> click.run());
+        return tile;
+    }
+
+    private void homeNearby(Trip item) {
+        String city = item == null ? "" : item.destination();
+        LinearLayout heading = row();
+        heading.setGravity(Gravity.CENTER_VERTICAL);
+        TextView title = line(heading, "Quanh bạn", 22, NAVY, true);
+        title.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
+        heading.addView(action("Bản đồ", PAGE, BLUE, () -> nearbyMap("điểm tham quan", city)),
+                new LinearLayout.LayoutParams(-2, dp(48)));
+        content.addView(heading);
+        line(content, item == null ? "Theo vị trí hiện tại" : city + " · Theo chuyến đi của bạn", 13, MUTED, false);
+        gap(content, 10);
+        if (item == null) {
+            LinearLayout panel = card(content, TINT);
+            line(panel, "Tìm nơi ăn chơi gần vị trí của bạn.", 16, NAVY, true);
+            panel.addView(action("Xem quanh bạn trên bản đồ", WHITE, NAVY, () -> nearbyMap("điểm tham quan", "")));
+            return;
+        }
+        String[] labels = {"Tất cả", "Ăn uống", "Cà phê", "Tham quan"};
+        LinearLayout chips = row();
+        LinearLayout results = column();
+        for (int index = 0; index < labels.length; index++) {
+            String category = labels[index];
+            TextView chip = action(category, index == 0 ? NAVY : WHITE, index == 0 ? WHITE : NAVY, () -> {});
+            chip.setSelected(index == 0);
+            chip.setOnClickListener(view -> {
+                for (int child = 0; child < chips.getChildCount(); child++) {
+                    TextView button = (TextView) chips.getChildAt(child);
+                    boolean selected = button == view;
+                    button.setSelected(selected);
+                    button.setBackground(rounded(selected ? NAVY : WHITE, 22));
+                    button.setTextColor(selected ? WHITE : NAVY);
+                }
+                homePlaces(results, city, category);
+            });
+            LinearLayout.LayoutParams size = new LinearLayout.LayoutParams(0, -2, 1);
+            size.setMarginEnd(dp(4));
+            chips.addView(chip, size);
+        }
+        content.addView(chips);
+        gap(content, 10);
+        content.addView(results);
+        homePlaces(results, city, labels[0]);
+        gap(content, 16);
+    }
+
+    private void homePlaces(LinearLayout results, String city, String category) {
+        results.removeAllViews();
+        HorizontalScrollView scroll = new HorizontalScrollView(this);
+        scroll.setHorizontalScrollBarEnabled(false);
+        LinearLayout tiles = row();
+        for (TravelCatalog.Place spot : TravelCatalog.PLACES) {
+            if (!TravelCatalog.fold(city).equals(TravelCatalog.fold(spot.city()))) continue;
+            if (!category.equals("Tất cả") && !category.equals(spot.category())) continue;
+            LinearLayout tile = column();
+            tile.setBackground(rounded(WHITE, 18));
+            tile.setClipToOutline(true);
+            LinearLayout.LayoutParams size = new LinearLayout.LayoutParams(dp(160), -1);
+            size.setMarginEnd(dp(9));
+            tiles.addView(tile, size);
+            if (spot.name().equals("Bãi Kem") || spot.name().equals("Hòn Mun")) {
+                ImageView photo = new ImageView(this);
+                boolean kem = spot.name().equals("Bãi Kem");
+                photo.setImageResource(kem ? R.drawable.bai_kem : R.drawable.nha_trang);
+                photo.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                photo.setContentDescription(kem ? "Ảnh Bãi Kem của Vivu Vietnam" : "Ảnh vịnh nhìn từ Hòn Mun của Tony24986");
+                tile.addView(photo, new LinearLayout.LayoutParams(-1, dp(110)));
+            }
+            LinearLayout details = column();
+            details.setPadding(dp(11), dp(9), dp(11), 0);
+            tile.addView(details);
+            line(details, spot.category().toUpperCase(Locale.ROOT), 11, BLUE, true);
+            line(details, spot.name(), 16, NAVY, true);
+            details.addView(action("Xem trên bản đồ", WHITE, BLUE, () -> openMaps(spot.name() + " " + city)));
+        }
+        if (tiles.getChildCount() > 0) {
+            scroll.addView(tiles);
+            results.addView(scroll);
+        } else {
+            results.addView(action("Tìm " + category.toLowerCase(Locale.ROOT) + " trên Google Maps", TINT, BLUE,
+                    () -> nearbyMap(category.equals("Tất cả") ? "điểm tham quan" : category, city)));
+        }
+    }
+
+    private void nearbyMap(String query, String city) {
+        if (!city.isEmpty()) {
+            openMaps(query + " " + city);
+            return;
+        }
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0?q=" + Uri.encode(query))));
+        } catch (ActivityNotFoundException error) {
+            openMaps(query + " gần tôi");
+        }
+    }
+
+    private void homeRecentTrips() {
+        if (trips.size() <= 1) return;
+        LinearLayout title = row();
+        title.setGravity(Gravity.CENTER_VERTICAL);
+        line(title, "Chuyến đi gần đây", 21, NAVY, true).setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
+        title.addView(action("Tất cả", PAGE, BLUE, () -> navigate(TRIPS)));
+        content.addView(title);
+        for (int index = trips.size() - 1; index >= Math.max(1, trips.size() - 2); index--) {
+            Trip item = trips.get(index);
+            LinearLayout panel = card(content, 0xFFFFF0E4);
+            LinearLayout entry = row();
+            entry.setGravity(Gravity.CENTER_VERTICAL);
+            TravelCatalog.Destination city = TravelCatalog.destination(item.destination());
+            if (city != null) {
+                LinearLayout thumb = column();
+                thumb.setBackground(rounded(TINT, 14));
+                thumb.setClipToOutline(true);
+                addPhoto(thumb, city, 58);
+                LinearLayout.LayoutParams size = new LinearLayout.LayoutParams(dp(58), dp(58));
+                size.setMarginEnd(dp(12));
+                entry.addView(thumb, size);
+            }
+            LinearLayout text = column();
+            entry.addView(text, new LinearLayout.LayoutParams(0, -2, 1));
+            line(text, item.title(), 16, NAVY, true);
+            line(text, tripDates(item) + " · " + item.people() + " người", 13, MUTED, false);
+            panel.addView(entry);
+            panel.addView(action("Xem chuyến đi  ›", 0xFFFFF0E4, BLUE, () -> openTrip(item, PLAN)));
+        }
     }
 
     private void tripDetails() {
         content.addView(action("‹  Chuyến đi", PAGE, BLUE, () -> navigate(TRIPS)));
-        tripCard(trip, false);
+        tripCard(trip);
         Trip selectedTrip = trip;
         chipRow(new String[]{"Hành lý " + packedCount(trip) + "/" + PACKING.length, "Tài liệu", "Thành viên"}, -1, index -> {
             switch (index) {
@@ -394,8 +737,12 @@ public final class MainActivity extends Activity {
     }
 
     private void createTrip() {
+        createTrip("");
+    }
+
+    private void createTrip(String suggestedDestination) {
         wizardStep = 0;
-        destination = "";
+        destination = suggestedDestination;
         startAt = 0;
         endAt = 0;
         tripBudget = 0;
@@ -615,43 +962,27 @@ public final class MainActivity extends Activity {
         heading("KẾ HOẠCH DU LỊCH", "Chuyến đi của bạn");
         content.addView(action("Tạo chuyến đi", NAVY, WHITE, this::createTrip));
         gap(content, 12);
-        for (int i = trips.size() - 1; i >= 0; i--) tripCard(trips.get(i), false);
+        for (int i = trips.size() - 1; i >= 0; i--) tripCard(trips.get(i));
         gap(content, 48);
     }
 
-    private void tripCard(Trip item, boolean overview) {
+    private void tripCard(Trip item) {
         LinearLayout surface = column();
         surface.setBackground(rounded(WHITE, 19));
         surface.setClipToOutline(true);
         LinearLayout.LayoutParams placement = new LinearLayout.LayoutParams(-1, -2);
         placement.bottomMargin = dp(12);
         content.addView(surface, placement);
-        addPhoto(surface, TravelCatalog.destination(item.destination()), overview ? 171 : 126);
+        addPhoto(surface, TravelCatalog.destination(item.destination()), 126);
         LinearLayout details = column();
         details.setPadding(dp(13), dp(10), dp(13), dp(10));
         surface.addView(details);
         line(details, item.title(), 18, NAVY, true);
         String period = tripDates(item);
         line(details, (period.isEmpty() ? "" : period + "  ·  ") + tripMeta(item), 13, MUTED, false);
-        if (overview) {
-            gap(details, 10);
-            List<String> firstDay = activities(item, 0);
-            if (!firstDay.isEmpty()) {
-                line(details, "◷  Tiếp theo", 12, MUTED, false);
-                line(details, firstDay.get(0), 13, NAVY, true);
-            }
-            gap(details, 9);
-            line(details, "Sẵn sàng  " + packedCount(item) + "/" + PACKING.length, 12, MUTED, true);
-            ProgressBar progress = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
-            progress.setProgressTintList(ColorStateList.valueOf(BLUE));
-            progress.setMax(PACKING.length);
-            progress.setProgress(packedCount(item));
-            details.addView(progress);
-        }
-        if (overview || trip == null) {
-            TextView open = action(overview ? "Xem lịch trình hôm nay" : "Xem chuyến đi  ›",
-                    overview ? NAVY : WHITE, overview ? WHITE : BLUE, () -> openTrip(item, PLAN));
-            if (!overview) open.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
+        if (trip == null) {
+            TextView open = action("Xem chuyến đi  ›", WHITE, BLUE, () -> openTrip(item, PLAN));
+            open.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
             details.addView(open);
         }
     }
@@ -666,6 +997,10 @@ public final class MainActivity extends Activity {
     }
 
     private void destinationGallery() {
+        destinationGallery(content);
+    }
+
+    private void destinationGallery(LinearLayout parent) {
         HorizontalScrollView scroller = new HorizontalScrollView(this);
         scroller.setHorizontalScrollBarEnabled(false);
         LinearLayout row = row();
@@ -681,13 +1016,14 @@ public final class MainActivity extends Activity {
                 if (trip != null) openAssistant(trip, "Gợi ý những điểm tham quan ở " + city.name() + ".");
                 else {
                     exploreCity = city.name();
-                    discoverFilter = "Tất cả";
+                    exploreCategory = 0;
+                    exploreQuery = "";
                     showTab(EXPLORE);
                 }
             }));
         }
         scroller.addView(row);
-        content.addView(scroller);
+        parent.addView(scroller);
     }
 
     private String tripMeta(Trip item) {
@@ -701,7 +1037,9 @@ public final class MainActivity extends Activity {
     }
 
     private void askAssistant() {
-        openAssistant(trip != null ? trip : trips.get(trips.size() - 1), "");
+        Trip current = trip;
+        if (current == null && tab == HOME && TravelCloud.session(this).has("uid")) current = homeTrip();
+        openAssistant(current != null ? current : trips.get(trips.size() - 1), "");
     }
 
     private void openAssistant(Trip item, String prompt) {
@@ -746,37 +1084,31 @@ public final class MainActivity extends Activity {
         startActivity(intent);
     }
 
-    private void shortcuts(Trip item) {
+    private void homeShortcuts(Trip item, int today) {
         LinearLayout tiles = row();
-        String[] names = {"Tạo Trip", "Ghi chi tiêu", "Tài liệu", "Lịch trình"};
-        String[] glyphs = {"+", "₫", "▤", "▦"};
-        int[] fills = {TINT, 0xFFE6F7EE, 0xFFFFF0DC, 0xFFE6F2FF};
-        int[] inks = {BLUE, GREEN, 0xFF9A540B, 0xFF1561A7};
+        Trip selected = item == null ? trips.get(trips.size() - 1) : item;
+        String[] names = item == null ? new String[]{"Tạo Trip", "Ghi chi tiêu", "Tài liệu", "Lịch trình"}
+                : new String[]{"Lịch trình", "Ghi chi tiêu", "Hành lý", "Tài liệu"};
+        int[] icons = item == null ? new int[]{6, 10, 7, 3} : new int[]{3, 10, 1, 7};
+        Runnable schedule = () -> openTrip(selected, PLAN, Math.max(today, 0));
+        Runnable money = () -> openTrip(selected, MONEY);
+        Runnable docs = () -> documents(selected);
+        Runnable[] actions = item == null ? new Runnable[]{this::createTrip, money, docs, () -> navigate(CALENDAR)}
+                : new Runnable[]{schedule, money, () -> packing(selected), docs};
+        int[] fills = {TINT, 0xFFFFF0E4, 0xFFE7F6EC, WHITE};
         for (int i = 0; i < names.length; i++) {
-            int index = i;
             LinearLayout tile = column();
             tile.setGravity(Gravity.CENTER);
-            TextView symbol = action(glyphs[i], fills[i], inks[i], () -> shortcut(item, index));
-            symbol.setContentDescription(names[i]);
-            symbol.setTextSize(20);
-            tile.addView(symbol, new LinearLayout.LayoutParams(dp(46), dp(46)));
-            TextView name = line(tile, names[i], 11, NAVY, true);
+            Runnable click = actions[i];
+            tile.addView(homeIcon(icons[i], fills[i], names[i], click), new LinearLayout.LayoutParams(dp(53), dp(53)));
+            TextView name = line(tile, names[i], 12, NAVY, true);
             name.setGravity(Gravity.CENTER);
-            name.setPadding(0, dp(4), 0, dp(8));
-            name.setOnClickListener(view -> shortcut(item, index));
+            name.setPadding(0, dp(6), 0, dp(8));
+            name.setOnClickListener(view -> click.run());
             tiles.addView(tile, new LinearLayout.LayoutParams(0, -2, 1));
         }
         content.addView(tiles);
         gap(content, 12);
-    }
-
-    private void shortcut(Trip item, int index) {
-        switch (index) {
-            case 0 -> createTrip();
-            case 1 -> openTrip(item, MONEY);
-            case 2 -> documents(item);
-            case 3 -> openTrip(item, PLAN);
-        }
     }
 
     private void chipRow(String[] labels, int active, java.util.function.IntConsumer click, boolean scrollable) {
@@ -812,36 +1144,11 @@ public final class MainActivity extends Activity {
 
     private void discover() {
         if (trip == null) {
-            heading("GỢI Ý ĐIỂM ĐẾN", "Khám Phá");
-            LinearLayout provinces = card(content, TINT);
-            line(provinces, "Việt Nam qua 63 tỉnh/thành", 21, NAVY, true);
-            line(provinces, "Ẩm thực, thắng cảnh, cà phê, chỗ ở và nhiều hơn nữa.", 13, MUTED, false);
-            gap(provinces, 8);
-            provinces.addView(action("Khám phá 63 tỉnh/thành  ›", NAVY, WHITE,
-                    () -> startActivity(new Intent(this, ProvinceActivity.class))));
-            EditText search = field(content, "Tìm nơi, món ăn, chỗ ở", InputType.TYPE_CLASS_TEXT, 100);
-            content.addView(action("Tìm trên Google Maps", NAVY, WHITE, () -> {
-                String query = search.getText().toString().trim();
-                if (!query.isEmpty()) openMaps(query);
-                else search.setError("Nhập nơi bạn muốn tìm");
-            }));
-            gap(content, 10);
-            chipRow(new String[]{"Cẩm nang", "Chỗ ở", "Hỏi AI"}, -1, index -> {
-                if (index == 0) new AlertDialog.Builder(this).setTitle("Cẩm nang")
-                        .setItems(new String[]{"Ninh Bình 3 ngày", "Hỏi trợ lý về điểm đến"}, (dialog, which) -> {
-                            if (which == 0) openTrip(SAMPLE, GUIDE);
-                            else openAssistant(null, "Gợi ý cẩm nang du lịch cho mình.");
-                        }).show();
-                else if (index == 1) openAssistant(null, "Gợi ý chỗ ở " + (exploreCity.isEmpty() ? "cho chuyến đi của mình" : "tại " + exploreCity) + ".");
-                else askAssistant();
-            }, false);
-            gap(content, 10);
-            destinationGallery();
-            gap(content, 16);
-            if (!exploreCity.isEmpty()) line(content, "Điểm đến tại " + exploreCity, 19, NAVY, true);
+            explore();
+            return;
         }
-        else line(content, "Khám phá quanh " + trip.destination(), 19, NAVY, true);
-        if (trip != null && TravelCatalog.destination(trip.destination()) == null) {
+        line(content, "Khám phá quanh " + trip.destination(), 19, NAVY, true);
+        if (TravelCatalog.destination(trip.destination()) == null) {
             String place = trip.destination();
             content.addView(action("Tìm nơi tham quan trên Google Maps", TINT, NAVY, () -> openMaps("Điểm tham quan " + place)));
             content.addView(action("Hỏi AI về " + place, NAVY, WHITE, () -> openAssistant(trip, "Ở " + place + " nên đi đâu?")));
@@ -851,13 +1158,186 @@ public final class MainActivity extends Activity {
         places(true);
     }
 
+    private void explore() {
+        line(content, "Khám Phá", 32, NAVY, true);
+        gap(content, 13);
+        LinearLayout searchBar = row();
+        searchBar.setGravity(Gravity.CENTER_VERTICAL);
+        GradientDrawable outline = rounded(PAGE, 21);
+        outline.setStroke(dp(1), MUTED);
+        searchBar.setBackground(outline);
+        EditText search = new EditText(this);
+        search.setSingleLine(true);
+        search.setInputType(InputType.TYPE_CLASS_TEXT);
+        search.setImeOptions(EditorInfo.IME_ACTION_SEARCH);
+        search.setFilters(new InputFilter[]{new InputFilter.LengthFilter(120)});
+        search.setTextSize(15);
+        search.setPadding(dp(15), 0, dp(4), 0);
+        search.setBackground(null);
+        search.setText(exploreQuery);
+        searchBar.addView(search, new LinearLayout.LayoutParams(0, dp(50), 1));
+        content.addView(searchBar);
+        gap(content, 12);
+        HorizontalScrollView strip = new HorizontalScrollView(this);
+        strip.setHorizontalScrollBarEnabled(false);
+        LinearLayout chips = row();
+        strip.addView(chips);
+        content.addView(strip);
+        gap(content, 13);
+        LinearLayout areaBar = row();
+        areaBar.setGravity(Gravity.CENTER_VERTICAL);
+        content.addView(areaBar);
+        gap(content, 12);
+        LinearLayout section = column();
+        content.addView(section);
+        LinearLayout extras = column();
+        content.addView(extras);
+        Runnable refresh = () -> {
+            boolean guide = exploreCategory == 1;
+            search.setHint(guide ? "Tìm theo điểm đến, vd. Đà Lạt" : "Tìm nơi, món ăn, chỗ ở");
+            areaBar.removeAllViews();
+            section.removeAllViews();
+            extras.removeAllViews();
+            for (int i = 0; i < chips.getChildCount(); i++) {
+                TextView chip = (TextView) chips.getChildAt(i);
+                boolean active = i == exploreCategory;
+                chip.setSelected(active);
+                GradientDrawable fill = rounded(active ? NAVY : WHITE, 24);
+                if (!active) fill.setStroke(dp(1), BORDER);
+                chip.setBackground(fill);
+                chip.setTextColor(active ? WHITE : NAVY);
+            }
+            if (guide) {
+                exploreGuides(section);
+                return;
+            }
+            Trip upcoming = signedIn() ? homeTrip() : null;
+            String area = exploreCity.isEmpty() ? (upcoming != null ? upcoming.destination() : "Hà Nội") : exploreCity;
+            TextView choose = action(area + "  ▾", WHITE, NAVY, () -> pickExploreArea(search));
+            choose.setContentDescription("Đổi khu vực, hiện tại " + area);
+            areaBar.addView(choose, new LinearLayout.LayoutParams(0, -2, 1));
+            areaBar.addView(action("63 tỉnh/thành  ›", TINT, BLUE, () -> startActivity(new Intent(this, ProvinceActivity.class))));
+            LinearLayout results = column();
+            section.addView(results);
+            new PlaceFeed(this, results, area, EXPLORE_FILTERS[exploreCategory], exploreQuery);
+            if (exploreCategory == 0 && exploreQuery.isEmpty()) {
+                gap(extras, 18);
+                line(extras, "Điểm đến nổi bật", 21, NAVY, true);
+                gap(extras, 10);
+                destinationGallery(extras);
+                if (TravelCatalog.destination(exploreCity) != null) places(extras, true);
+            }
+        };
+        Runnable submit = () -> {
+            exploreQuery = search.getText().toString().trim();
+            InputMethodManager keyboard = getSystemService(InputMethodManager.class);
+            if (keyboard != null) keyboard.hideSoftInputFromWindow(search.getWindowToken(), 0);
+            search.clearFocus();
+            refresh.run();
+        };
+        search.setOnEditorActionListener((view, action, event) -> {
+            if (action != EditorInfo.IME_ACTION_SEARCH) return false;
+            submit.run();
+            return true;
+        });
+        TextView searchButton = action("Tìm", TINT, NAVY, submit);
+        searchButton.setContentDescription("Tìm kiếm");
+        searchBar.addView(searchButton, new LinearLayout.LayoutParams(dp(58), dp(46)));
+        for (int i = 0; i < EXPLORE_FILTERS.length; i++) {
+            int index = i;
+            TextView chip = action(EXPLORE_FILTERS[i], WHITE, NAVY, () -> {
+                exploreCategory = index;
+                submit.run();
+            });
+            chip.setMinHeight(dp(42));
+            LinearLayout.LayoutParams size = new LinearLayout.LayoutParams(-2, -2);
+            size.setMarginEnd(dp(7));
+            chips.addView(chip, size);
+        }
+        strip.post(() -> strip.scrollTo(chips.getChildAt(exploreCategory).getLeft() - dp(12), 0));
+        refresh.run();
+    }
+
+    private void pickExploreArea(EditText search) {
+        LinearLayout panel = column();
+        panel.setPadding(dp(18), 0, dp(18), 0);
+        EditText find = field(panel, "Tìm điểm đến hoặc tỉnh/thành", InputType.TYPE_CLASS_TEXT, 45);
+        LinearLayout list = column();
+        ScrollView scroll = new ScrollView(this);
+        scroll.addView(list);
+        panel.addView(scroll, new LinearLayout.LayoutParams(-1, dp(300)));
+        AlertDialog dialog = new AlertDialog.Builder(this).setTitle("Chọn khu vực").setView(panel)
+                .setNegativeButton("Hủy", null).create();
+        LinkedHashSet<String> choices = new LinkedHashSet<>(java.util.Arrays.asList(DESTINATIONS));
+        choices.addAll(java.util.Arrays.asList(ProvinceActivity.PROVINCES));
+        Runnable update = () -> {
+            list.removeAllViews();
+            String keyword = TravelCatalog.fold(find.getText().toString());
+            for (String city : choices) if (TravelCatalog.fold(city).contains(keyword)) {
+                list.addView(action(city, WHITE, NAVY, () -> {
+                    exploreCity = city.equals("Thừa Thiên Huế") ? "Huế" : city;
+                    exploreQuery = search.getText().toString().trim();
+                    dialog.dismiss();
+                    showTab(EXPLORE);
+                }));
+            }
+            if (list.getChildCount() == 0) line(list, "Không tìm thấy khu vực phù hợp.", 14, MUTED, false);
+        };
+        find.addTextChangedListener(new android.text.TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int a, int c, int f) {}
+            @Override public void onTextChanged(CharSequence s, int a, int before, int count) { update.run(); }
+            @Override public void afterTextChanged(android.text.Editable s) {}
+        });
+        update.run();
+        dialog.show();
+    }
+
+    private void exploreGuides(LinearLayout panel) {
+        line(panel, "Cẩm nang", 24, NAVY, true);
+        line(panel, "Gợi ý lịch trình và kinh nghiệm từ Travel VN", 14, MUTED, false);
+        gap(panel, 13);
+        String filter = TravelCatalog.fold(exploreQuery);
+        int count = 0;
+        for (TravelCatalog.Destination city : TravelCatalog.DESTINATIONS) {
+            if (!TravelCatalog.fold(city.name()).contains(filter)) continue;
+            count++;
+            LinearLayout item = row();
+            item.setGravity(Gravity.CENTER_VERTICAL);
+            LinearLayout thumbnail = column();
+            thumbnail.setBackground(rounded(TINT, 16));
+            thumbnail.setClipToOutline(true);
+            addPhoto(thumbnail, city, 78);
+            item.addView(thumbnail, new LinearLayout.LayoutParams(dp(84), dp(78)));
+            LinearLayout description = column();
+            description.setPadding(dp(12), 0, 0, 0);
+            line(description, "Cẩm nang " + city.name(), 17, NAVY, true);
+            line(description, city.description(), 13, MUTED, false);
+            item.addView(description, new LinearLayout.LayoutParams(0, -2, 1));
+            item.setFocusable(true);
+            item.setOnClickListener(view -> {
+                if (city.name().equals("Ninh Bình")) { openTrip(SAMPLE, GUIDE); return; }
+                new AlertDialog.Builder(this).setTitle("Cẩm nang " + city.name())
+                        .setMessage(city.description() + "\n\nĂn uống\n" + city.food() + "\n\nChỗ ở\n" + city.stay())
+                        .setNegativeButton("Đóng", null)
+                        .setPositiveButton("Lên kế hoạch", (dialog, which) -> createTrip(city.name())).show();
+            });
+            panel.addView(item);
+            gap(panel, 14);
+        }
+        if (count == 0) line(panel, "Chưa có cẩm nang cho từ khóa này.", 14, MUTED, false);
+    }
+
     private void places(boolean showAll) {
+        places(content, showAll);
+    }
+
+    private void places(LinearLayout parent, boolean showAll) {
         int shown = 0;
         String city = trip != null ? trip.destination() : tab == HOME ? "Ninh Bình" : exploreCity;
         for (TravelCatalog.Place spot : TravelCatalog.PLACES) {
             if (!city.isEmpty() && !TravelCatalog.fold(city).equals(TravelCatalog.fold(spot.city()))) continue;
             if (!discoverFilter.equals("Tất cả") && !discoverFilter.equals(spot.category())) continue;
-            LinearLayout entry = card(content, WHITE);
+            LinearLayout entry = card(parent, WHITE);
             line(entry, spot.category() + " · " + spot.city(), 11, GREEN, true);
             line(entry, spot.name(), 16, NAVY, true);
             if (showAll) line(entry, spot.tip(), 14, MUTED, false);
@@ -883,7 +1363,7 @@ public final class MainActivity extends Activity {
             }
             if (++shown >= 2 && !showAll) break;
         }
-        if (shown == 0) line(card(content, WHITE), "Chưa có địa điểm thuộc mục này.", 14, MUTED, false);
+        if (shown == 0) line(card(parent, WHITE), "Chưa có địa điểm thuộc mục này.", 14, MUTED, false);
     }
 
     private void openMaps(String query) {
@@ -908,16 +1388,7 @@ public final class MainActivity extends Activity {
 
     private void memories() {
         heading("NHẬT KÝ & KỶ NIỆM", "Kỷ niệm");
-        LinkedHashSet<String> locations = new LinkedHashSet<>();
-        for (Trip item : trips) {
-            if (item.startAt() > 0 && item.startAt() <= System.currentTimeMillis()) locations.add(item.destination());
-        }
-        locations.addAll(storage.getStringSet("visited", java.util.Collections.emptySet()));
-        LinearLayout visited = card(content, 0xFFE7F6EC);
-        line(visited, "Nơi bạn đã đi", 14, GREEN, true);
-        line(visited, locations.size() + " điểm đến", 23, NAVY, true);
-        line(visited, locations.isEmpty() ? "Chuyến đi đã bắt đầu sẽ xuất hiện ở đây." : TextUtils.join(" · ", locations), 13, MUTED, false);
-        visited.addView(action("Đánh dấu nơi đã đi", WHITE, GREEN, this::markVisited));
+        visitedCard();
         line(content, "Nhật ký", 19, NAVY, true);
         gap(content, 8);
         for (int i = trips.size() - 1; i >= 0; i--) {
@@ -931,9 +1402,36 @@ public final class MainActivity extends Activity {
         content.addView(action("Tạo chuyến đi", NAVY, WHITE, this::createTrip));
     }
 
+    private void visitedCard() {
+        LinkedHashSet<String> locations = visitedProvinces();
+        LinearLayout visited = card(content, 0xFFE7F6EC);
+        line(visited, "Nơi bạn đã đi", 17, NAVY, true);
+        gap(visited, 5);
+        line(visited, locations.size() + "/" + ProvinceActivity.PROVINCES.length + " tỉnh thành", 27, NAVY, true);
+        line(visited, locations.isEmpty() ? "Đánh dấu những nơi bạn từng đến, kể cả trước khi dùng Travel VN."
+                : TextUtils.join(" · ", locations), 14, MUTED, false);
+        gap(visited, 10);
+        visited.addView(action("Đánh dấu nơi đã đi", WHITE, NAVY, this::markVisited));
+    }
+
+    private LinkedHashSet<String> visitedProvinces() {
+        LinkedHashSet<String> provinces = new LinkedHashSet<>();
+        for (String place : storage.getStringSet("visited", java.util.Collections.emptySet())) {
+            provinces.add(switch (place) {
+                case "Phú Quốc" -> "Kiên Giang";
+                case "Huế" -> "Thừa Thiên Huế";
+                case "Sa Pa" -> "Lào Cai";
+                case "Đà Lạt" -> "Lâm Đồng";
+                case "Hội An" -> "Quảng Nam";
+                default -> place;
+            });
+        }
+        return provinces;
+    }
+
     private void markVisited() {
-        String[] names = java.util.Arrays.stream(TravelCatalog.DESTINATIONS).map(TravelCatalog.Destination::name).toArray(String[]::new);
-        LinkedHashSet<String> selected = new LinkedHashSet<>(storage.getStringSet("visited", java.util.Collections.emptySet()));
+        String[] names = ProvinceActivity.PROVINCES;
+        LinkedHashSet<String> selected = visitedProvinces();
         boolean[] checked = new boolean[names.length];
         for (int i = 0; i < names.length; i++) checked[i] = selected.contains(names[i]);
         new AlertDialog.Builder(this).setTitle("Nơi bạn đã đi")
@@ -941,7 +1439,7 @@ public final class MainActivity extends Activity {
                     if (value) selected.add(names[index]); else selected.remove(names[index]);
                 }).setNegativeButton("Hủy", null).setPositiveButton("Lưu", (dialog, which) -> {
                     storage.edit().putStringSet("visited", selected).apply();
-                    showTab(MEMORIES);
+                    showTab(tab);
                 }).show();
     }
 
@@ -1116,15 +1614,20 @@ public final class MainActivity extends Activity {
     }
 
     private void members() {
+        Trip selected = trip;
         new AlertDialog.Builder(this).setTitle("Thành viên · " + trip.people())
                 .setItems(people(), null).setNegativeButton("Đóng", null)
-                .setPositiveButton("Chia sẻ kế hoạch", (dialog, which) -> {
-                    StringBuilder plan = new StringBuilder(trip.title() + "\n" + tripMeta(trip));
-                    for (int i = 0; i < trip.days(); i++) plan.append("\n\nNgày ").append(i + 1).append("\n")
-                            .append(TextUtils.join("\n", activities(trip, i)));
-                    startActivity(Intent.createChooser(new Intent(Intent.ACTION_SEND).setType("text/plain")
-                            .putExtra(Intent.EXTRA_TEXT, plan.toString()), "Chia sẻ kế hoạch"));
-                }).show();
+                .setPositiveButton("Chia sẻ kế hoạch", (dialog, which) -> shareTrip(selected)).show();
+    }
+
+    private void shareTrip(Trip item) {
+        StringBuilder plan = new StringBuilder(item.title() + "\n" + tripMeta(item));
+        for (int i = 0; i < item.days(); i++) plan.append("\n\nNgày ").append(i + 1).append("\n")
+                .append(TextUtils.join("\n", activities(item, i)));
+        startActivity(Intent.createChooser(new Intent(Intent.ACTION_SEND).setType("text/plain")
+                .putExtra(Intent.EXTRA_TEXT, plan.toString()), "Chia sẻ kế hoạch"));
+        storage.edit().putBoolean("openedSharePlan", true).apply();
+        if (tab == HOME) showTab(HOME);
     }
 
     private void journal() {
@@ -1349,33 +1852,167 @@ public final class MainActivity extends Activity {
     }
 
     private void openAccount() {
-        startActivityForResult(new Intent(this, AccountActivity.class), ACCOUNT_REQUEST);
+        openAccount("welcome");
+    }
+
+    private void openAccount(String mode) {
+        startActivityForResult(new Intent(this, AccountActivity.class).putExtra("mode", mode), ACCOUNT_REQUEST);
+    }
+
+    private boolean signedIn() {
+        return !TravelCloud.session(this).optString("uid").isEmpty();
     }
 
     private void profile() {
-        heading("TRAVEL VN", "Menu");
-        LinearLayout account = card(content, WHITE);
-        boolean signedIn = TravelCloud.session(this).has("uid");
-        line(account, "TÀI KHOẢN TRAVEL VN", 12, BLUE, true);
-        line(account, accountName(), 22, NAVY, true);
-        gap(account, 8);
-        account.addView(action(signedIn ? "Hồ sơ và bảo mật  ›" : "Đăng nhập hoặc tạo tài khoản  ›",
-                NAVY, WHITE, this::openAccount));
-        LinearLayout group = card(content, WHITE);
-        line(group, "CHUYẾN ĐI", 12, BLUE, true);
-        group.addView(action("Chuyến đi của bạn  ›", WHITE, NAVY, () -> navigate(TRIPS)));
-        group.addView(action("Lịch chuyến đi  ›", WHITE, NAVY, () -> navigate(CALENDAR)));
-        group.addView(action("Ví giấy tờ  ›", WHITE, NAVY, () -> documents(trips.get(trips.size() - 1))));
-        group.addView(action("Công nợ  ›", WHITE, NAVY, () -> openTrip(trips.get(trips.size() - 1), MONEY)));
-        group.addView(action("Địa điểm đã lưu  ›", WHITE, NAVY, this::bookmarks));
-        if (BuildConfig.DEBUG && getString(R.string.travel_backend_url).isEmpty()) {
-            group.addView(action("Kết nối máy chủ thử nghiệm  ›", WHITE, NAVY,
-                    () -> startActivity(new Intent(this, AssistantActivity.class).putExtra("settings", true))));
+        content.setBackgroundColor(WHITE);
+        gap(content, 14);
+        boolean loggedIn = signedIn();
+        String name = loggedIn ? accountName() : "Khách";
+        String[] words = name.split("\\s+");
+        LinearLayout header = row();
+        header.setGravity(Gravity.CENTER_VERTICAL);
+        TextView avatar = action(loggedIn ? initials(words[0]) + (words.length > 1 ? initials(words[words.length - 1]) : "")
+                : "KH", TINT, NAVY, this::openAccount);
+        avatar.setTextSize(23);
+        avatar.setBackground(rounded(TINT, 36));
+        avatar.setContentDescription(loggedIn ? "Mở hồ sơ" : "Đăng nhập");
+        header.addView(avatar, new LinearLayout.LayoutParams(dp(65), dp(65)));
+        LinearLayout identity = column();
+        identity.setPadding(dp(14), 0, 0, 0);
+        line(identity, name, 23, NAVY, true);
+        line(identity, loggedIn ? TravelCloud.session(this).optString("email") : "Chưa đăng nhập", 14, MUTED, false);
+        header.addView(identity, new LinearLayout.LayoutParams(0, -2, 1));
+        content.addView(header);
+        menuHeading("CHUYẾN ĐI");
+        menuRow(1, "Chuyến đi của bạn", "", () -> navigate(TRIPS));
+        menuRow(7, "Ví giấy tờ", "", () -> documents(trips.get(trips.size() - 1)));
+        if (loggedIn) {
+            menuRow(11, "Thống kê", "", () -> menuInfo("Thống kê", (trips.size() - 1) + " chuyến đi đã tạo\n"
+                    + visitedProvinces().size() + "/63 tỉnh/thành đã đánh dấu."));
+            menuRow(12, "Công nợ", "", () -> openTrip(trips.get(trips.size() - 1), MONEY));
+            menuRow(13, "Đánh giá của tôi", "", this::myReviews);
         }
-        LinearLayout about = card(content, TINT);
-        line(about, "Travel VN · " + BuildConfig.VERSION_NAME, 15, BLUE, true);
-        line(about, "Tiếng Việt  ·  Dữ liệu lưu trên thiết bị", 14, MUTED, false);
-        about.addView(action("Nguồn ảnh điểm đến", WHITE, BLUE, this::photoCredit));
+        menuRow(3, "Lịch chuyến đi", "", () -> navigate(CALENDAR));
+        menuRow(2, "Địa điểm đã lưu", "", this::bookmarks);
+        menuHeading("CÀI ĐẶT");
+        if (loggedIn) menuRow(4, "Hồ sơ và tài khoản", "", this::openAccount);
+        menuRow(5, "Thông báo", "", () -> {
+            Intent intent = Build.VERSION.SDK_INT >= 26
+                    ? new Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                            .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, getPackageName())
+                    : new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + getPackageName()));
+            try { startActivity(intent); } catch (ActivityNotFoundException error) {
+                menuInfo("Thông báo", "Mở Cài đặt Android → Ứng dụng → Travel VN để quản lý thông báo.");
+            }
+        });
+        menuRow(14, "Ngôn ngữ", "Tiếng Việt", () -> menuInfo("Ngôn ngữ", "Travel VN hiện hỗ trợ tiếng Việt."));
+        menuRow(12, "Tiền tệ", "VND", () -> menuInfo("Tiền tệ", "Ngân sách chuyến đi dùng VND. Mức giá địa điểm hiển thị theo dữ liệu Google."));
+        menuRow(15, "Giao diện", "Sáng", () -> menuInfo("Giao diện", "Travel VN hiện dùng giao diện sáng."));
+        menuHeading("HỖ TRỢ");
+        menuRow(16, "Trợ giúp và góp ý", "", () -> new AlertDialog.Builder(this).setTitle("Trợ giúp và góp ý")
+                .setMessage("Vào Khám phá để tìm địa điểm, hoặc Chuyến đi của bạn để quản lý lịch và chi tiêu.")
+                .setNegativeButton("Đóng", null)
+                .setPositiveButton("Mở GitHub", (dialog, which) -> openLink("https://github.com/KHNeJu/App-Travel-Vn")).show());
+        menuRow(17, "Quyền riêng tư", "", () -> new AlertDialog.Builder(this).setTitle("Quyền riêng tư")
+                .setMessage("Chuyến đi và ảnh bìa lưu trên thiết bị. Firebase xử lý tài khoản email. Google Maps nhận từ khóa khi bạn tìm địa điểm. Hỏi AI gửi ngữ cảnh chuyến đi để trả lời khi dịch vụ được bật.")
+                .setNegativeButton("Đóng", null)
+                .setPositiveButton("Chính sách Google", (d, w) -> openLink("https://policies.google.com/privacy?hl=vi")).show());
+        menuRow(16, "Về ứng dụng", "", () -> menuInfo("Travel VN", "Phiên bản " + BuildConfig.VERSION_NAME
+                + "\nỨng dụng lập kế hoạch và khám phá du lịch Việt Nam."));
+        menuRow(8, "Nguồn ảnh điểm đến", "", this::photoCredit);
+        if (BuildConfig.DEBUG && getString(R.string.travel_backend_url).isEmpty()) {
+            menuRow(2, "Kết nối máy chủ thử nghiệm", "",
+                    () -> startActivity(new Intent(this, AssistantActivity.class).putExtra("settings", true)));
+        }
+        gap(content, 12);
+        if (loggedIn) {
+            TextView signOut = action("Đăng xuất", WHITE, NAVY, () -> new AlertDialog.Builder(this)
+                    .setTitle("Đăng xuất Travel VN?").setMessage("Chuyến đi đã lưu vẫn còn trên thiết bị này.")
+                    .setNegativeButton("Hủy", null).setPositiveButton("Đăng xuất", (d, w) -> {
+                        TravelCloud.signOut(this);
+                        showTab(MENU);
+                    }).show());
+            GradientDrawable outline = rounded(WHITE, 20);
+            outline.setStroke(dp(1), BORDER);
+            signOut.setBackground(outline);
+            content.addView(signOut);
+            gap(content, 12);
+        }
+        line(content, "Travel VN " + BuildConfig.VERSION_NAME, 12, MUTED, false).setGravity(Gravity.CENTER);
+    }
+
+    private void menuHeading(String title) {
+        gap(content, 21);
+        line(content, title, 12, MUTED, true).setLetterSpacing(.08f);
+        gap(content, 5);
+    }
+
+    private void menuRow(int icon, String title, String value, Runnable click) {
+        LinearLayout item = row();
+        item.setGravity(Gravity.CENTER_VERTICAL);
+        item.setMinimumHeight(dp(53));
+        item.setBackground(new RippleDrawable(ColorStateList.valueOf(TINT), rounded(WHITE, 10), null));
+        FrameLayout badge = new FrameLayout(this);
+        badge.setBackground(rounded(PAGE, 12));
+        badge.addView(new TravelIcon(this, icon, NAVY), new FrameLayout.LayoutParams(dp(21), dp(21), Gravity.CENTER));
+        item.addView(badge, new LinearLayout.LayoutParams(dp(36), dp(36)));
+        TextView label = new TextView(this);
+        label.setText(title);
+        label.setTextSize(16);
+        label.setTextColor(NAVY);
+        label.setPadding(dp(11), dp(8), dp(4), dp(8));
+        item.addView(label, new LinearLayout.LayoutParams(0, -2, 1));
+        if (!value.isEmpty()) label(item, value, 13, MUTED, false);
+        TextView arrow = label(item, "›", 23, MUTED, false);
+        arrow.setPadding(dp(9), 0, dp(5), 0);
+        item.setContentDescription(value.isEmpty() ? title : title + ", " + value);
+        item.setFocusable(true);
+        item.setOnClickListener(v -> click.run());
+        content.addView(item);
+        View divider = new View(this);
+        divider.setBackgroundColor(BORDER);
+        content.addView(divider, new LinearLayout.LayoutParams(-1, dp(1)));
+    }
+
+    private void menuGuestFooter() {
+        LinearLayout footer = column();
+        footer.setBackgroundColor(WHITE);
+        footer.setElevation(dp(4));
+        footer.setPadding(dp(16), dp(10), dp(16), dp(3));
+        footer.addView(action("Tạo tài khoản miễn phí", 0xFF1267D8, WHITE, () -> openAccount("signup")));
+        footer.addView(action("Đã có tài khoản?  Đăng nhập", WHITE, BLUE, this::openAccount));
+        root.addView(footer);
+    }
+
+    private void menuInfo(String title, String message) {
+        new AlertDialog.Builder(this).setTitle(title).setMessage(message).setPositiveButton("Đóng", null).show();
+    }
+
+    private void myReviews() {
+        String key = "reviews:" + TravelCloud.session(this).optString("uid");
+        JSONArray saved = savedArray(key);
+        String[] values = new String[saved.length()];
+        for (int i = 0; i < values.length; i++) values[i] = saved.optString(i);
+        AlertDialog.Builder list = new AlertDialog.Builder(this).setTitle("Đánh giá của tôi")
+                .setNegativeButton("Đóng", null).setPositiveButton("Viết đánh giá", (d, w) -> {
+                    LinearLayout editor = column();
+                    editor.setPadding(dp(18), 0, dp(18), 0);
+                    EditText name = field(editor, "Tên địa điểm", InputType.TYPE_CLASS_TEXT, 100);
+                    EditText note = field(editor, "Cảm nhận của bạn", InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE, 500);
+                    AlertDialog write = new AlertDialog.Builder(this).setTitle("Đánh giá riêng tư")
+                            .setView(editor).setNegativeButton("Hủy", null).setPositiveButton("Lưu", null).create();
+                    write.setOnShowListener(event -> write.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+                        String place = name.getText().toString().trim();
+                        String review = note.getText().toString().trim();
+                        if (place.isEmpty()) { name.setError("Nhập tên địa điểm"); return; }
+                        if (review.isEmpty()) { note.setError("Nhập cảm nhận của bạn"); return; }
+                        if (writeArray(key, saved.put(place + "\n" + review))) { write.dismiss(); myReviews(); }
+                    }));
+                    write.show();
+                });
+        if (values.length == 0) list.setMessage("Đánh giá bạn viết ở đây chỉ lưu trên thiết bị này.");
+        else list.setItems(values, (d, which) -> menuInfo("Đánh giá của tôi", values[which]));
+        list.show();
     }
 
     private void bookmarks() {
@@ -1505,19 +2142,10 @@ public final class MainActivity extends Activity {
         parent.addView(new View(this), new LinearLayout.LayoutParams(1, dp(height)));
     }
 
-    private LinearLayout column() {
-        LinearLayout layout = new LinearLayout(this);
-        layout.setOrientation(LinearLayout.VERTICAL);
-        return layout;
-    }
-
     private LinearLayout row() {
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.HORIZONTAL);
         return layout;
     }
 
-    private int dp(int value) {
-        return Math.round(value * getResources().getDisplayMetrics().density);
-    }
 }

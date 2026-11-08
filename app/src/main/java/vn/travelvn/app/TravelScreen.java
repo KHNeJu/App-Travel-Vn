@@ -23,8 +23,12 @@ abstract class TravelScreen extends Activity {
     LinearLayout body;
 
     void screen(String title, String subtitle) {
+        screen(title, subtitle, PAGE);
+    }
+
+    void screen(String title, String subtitle, int background) {
         LinearLayout root = column();
-        root.setBackgroundColor(PAGE);
+        root.setBackgroundColor(background);
         root.setFocusableInTouchMode(true);
         setContentView(root);
         if (Build.VERSION.SDK_INT >= 30) {
@@ -42,6 +46,7 @@ abstract class TravelScreen extends Activity {
         }
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
+        scroll.setVerticalScrollBarEnabled(false);
         root.addView(scroll, new LinearLayout.LayoutParams(-1, -1));
         body = column();
         body.setPadding(dp(18), dp(10), dp(18), dp(24));
@@ -51,9 +56,11 @@ abstract class TravelScreen extends Activity {
         back.setTextSize(24);
         body.addView(back, new LinearLayout.LayoutParams(dp(48), dp(46)));
         space(body, 10);
-        label(body, title, 27, INK, true);
-        label(body, subtitle, 14, MUTED, false);
-        space(body, 15);
+        if (!title.isEmpty()) {
+            label(body, title, 32, INK, true);
+            label(body, subtitle, 15, MUTED, false);
+            space(body, 19);
+        }
         root.requestFocus();
     }
 

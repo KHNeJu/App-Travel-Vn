@@ -102,3 +102,35 @@ test('places checks the Firebase project and returns scoped results with photo c
   }]);
   assert.doesNotMatch(JSON.stringify(result), /test-places-key|test-firebase-key/);
 });
+
+test('guest places search returns Google metadata even without photos, while chat stays protected', async (t) => {
+  const range = { startPrice: { currencyCode: 'VND', units: '45000' } };
+  const server = createChatServer({
+    placesKey: 'test-places-key', publicPlaces: true,
+    callGoogle: async (url, options) => {
+      assert.match(url, /places:searchText$/);
+      assert.equal(JSON.parse(options.body).textQuery, 'bún bò tại khu vực Huế, Việt Nam');
+      assert.match(options.headers['X-Goog-FieldMask'], /places\.priceRange/);
+      return Response.json({ places: [{
+        displayName: { text: 'Quán thử' }, formattedAddress: 'Huế', googleMapsUri: 'https://maps.google.com/?cid=2',
+        rating: 4.6, userRatingCount: 81, priceRange: range, priceLevel: 'PRICE_LEVEL_INEXPENSIVE',
+        regularOpeningHours: { weekdayDescriptions: ['Thứ Hai: 08:00–17:00'] },
+        websiteUri: 'https://example.org', nationalPhoneNumber: '0234 000 000',
+      }] });
+    },
+  }).listen(0, '127.0.0.1');
+  t.after(() => server.close());
+  await once(server, 'listening');
+  const post = (path, query) => fetch('http://127.0.0.1:' + server.address().port + path, {
+    method: 'POST', body: JSON.stringify({ province: 'Huế', category: 'Tất cả', query }),
+  });
+  assert.equal((await post('/api/chat', '')).status, 401);
+  assert.equal((await post('/api/places', 'x'.repeat(121))).status, 400);
+  const result = await post('/api/places', 'bún bò');
+  assert.equal(result.status, 200);
+  assert.deepEqual((await result.json()).places, [{
+    title: 'Quán thử', address: 'Huế', url: 'https://maps.google.com/?cid=2', authors: [], attributions: [],
+    rating: 4.6, reviewCount: 81, priceRange: range, priceLevel: 'PRICE_LEVEL_INEXPENSIVE',
+    hours: ['Thứ Hai: 08:00–17:00'], website: 'https://example.org', phone: '0234 000 000',
+  }]);
+});

@@ -121,7 +121,7 @@ final class TravelCloud {
             token = testToken;
             if (base.isEmpty() || !validUrl(context, base)) throw new ApiError("Bản cài này cần máy chủ Travel VN để truy cập dữ liệu Google.");
         }
-        if (token.isEmpty()) throw new ApiError("Đăng nhập Travel VN để tiếp tục.");
+        if (token.isEmpty() && !"/api/places".equals(path)) throw new ApiError("Đăng nhập Travel VN để tiếp tục.");
         return post(base + path, "application/json; charset=utf-8", body.toString(), token, 48_000);
     }
 

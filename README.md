@@ -23,8 +23,8 @@ APK được tạo tại `app/build/outputs/apk/debug/app-debug.apk`.
 - Mở tab **Chi tiêu** của chuyến đi để ghi khoản chi, chọn người trả và những người cần chia. **Xem công nợ** gợi ý các khoản chuyển. Dữ liệu của chuyến Ninh Bình từ bản trước vẫn dùng được.
 - **Hành lý**, **Tài liệu** và **Nhật ký** lưu theo từng chuyến trên thiết bị. Mục **Thành viên** chia sẻ kế hoạch dạng văn bản.
 
-- Từ **Menu**, mở **Đăng nhập hoặc tạo tài khoản**. Dùng **Quên mật khẩu?** để nhận liên kết qua email. Sau khi đăng nhập, mở **Hồ sơ và bảo mật** để đổi tên, ảnh bìa hoặc mật khẩu, và đăng xuất. Ảnh bìa và dữ liệu chuyến đi lưu trên từng thiết bị. Firebase đồng bộ thông tin tài khoản và tên hiển thị.
-- Mở **Khám phá → Khám phá 63 tỉnh/thành**, chọn địa phương rồi chọn một trong tám hạng mục. Danh mục dùng tên trước sắp xếp hành chính. Máy chủ tìm địa điểm theo hạng mục bằng Google Places, ưu tiên kết quả có ảnh và hiện nguồn ảnh khi Google cung cấp. Khi chưa kết nối, dùng **Tìm trên Google Maps** để xem bên ngoài app.
+- Từ **Menu**, chọn **Tạo tài khoản miễn phí** hoặc **Đăng nhập → Dùng email**. Dùng **Quên mật khẩu?** để nhận liên kết qua email. Sau khi đăng nhập, vào **Hồ sơ và tài khoản** để đổi tên, ảnh bìa hoặc mật khẩu. Hai nút Google/Apple hiện chỉ có giao diện. Ảnh bìa và dữ liệu chuyến đi lưu trên từng thiết bị.
+- Trong **Khám phá**, chọn khu vực, hạng mục hoặc tìm bằng tên địa điểm. Google Places cung cấp tên, ảnh, đánh giá, địa chỉ, giá tham khảo, giờ mở cửa và thông tin liên hệ khi có. **Chỗ ở → Xem giá theo ngày** mở Google Hotels để chọn ngày. **63 tỉnh/thành** dùng danh mục tên trước sắp xếp hành chính. Khi chưa kết nối, dùng **Tìm trên Google Maps** để tra bên ngoài app.
 - Mở **Hỏi AI** và gửi câu hỏi. Gemini nhận các lượt gần nhất, lịch đã lưu của chuyến đang mở, ngân sách, tổng chi phí đã ghi, hành lý và các điểm đã lưu. Trợ lý ưu tiên dữ liệu chuyến đi và dùng Google Search cho câu hỏi cần tra cứu. Khi chưa bật Gemini, app chỉ hiện câu trả lời từ lịch hoặc cẩm nang có sẵn và cung cấp liên kết tìm kiếm cho câu ngoài phạm vi.
 
 Mở **Chuyến đi → Kế hoạch → Lộ trình** để chuyển ngày, xem ghim và danh sách điểm dừng. Nét đứt biểu diễn thứ tự ghé. **Tính đường giữa ghim** lấy đường ô tô ước tính từ OSRM cho các điểm đã có tọa độ. **Mở chỉ đường trên Google Maps** đưa các điểm trong ngày sang Google Maps, kể cả điểm nhập tay. Bản đồ nền OpenStreetMap và tính đường cần mạng.
@@ -54,7 +54,9 @@ $env:TRAVEL_BACKEND_URL = Read-Host "Địa chỉ gốc của máy chủ"
 .\gradlew.bat :app:assembleDebug
 ```
 
-5. Cài APK mới và đăng nhập một lần. Trợ lý và Khám phá lấy phiên đăng nhập để gọi máy chủ. Người dùng không cần nhập địa chỉ API hoặc mã truy cập trong chat.
+5. Cài APK mới và đăng nhập một lần. Trợ lý và Khám phá lấy phiên đăng nhập để gọi máy chủ. Nếu muốn khách xem dữ liệu ngay trong app, chạy máy chủ với `TRAVEL_PUBLIC_PLACES=1`; cờ này chỉ mở Khám phá, còn Hỏi AI vẫn cần xác thực. Đặt hạn mức cho Places API trước khi bật truy cập khách.
+
+Google Places trả về mức giá hoặc khoảng giá khi có; giá phòng theo ngày được xem trên Google Hotels. Khi triển khai công khai, công bố điều khoản và chính sách quyền riêng tư cho bản phát hành. [Chính sách Google Places](https://developers.google.com/maps/documentation/places/web-service/policies)
 
 `GEMINI_MODEL` mặc định là `gemini-3.8-flash`. Chọn `GEMINI_GROUNDING=search-maps` để bật thêm Google Maps, hoặc `none` nếu chỉ thử hỏi đáp Gemini. Kiểm tra máy chủ bằng `node --test .\server\index.test.mjs`. [Google Search grounding](https://ai.google.dev/gemini-api/docs/generate-content/google-search)
 
@@ -64,6 +66,8 @@ Bản APK build với cấu hình trống dùng được các màn hình và d�
 
 | Ảnh | Tác giả | Giấy phép |
 | --- | --- | --- |
+| [Vịnh Nha Trang](https://commons.wikimedia.org/wiki/File:Panorama_of_V%E1%BB%8Bnh_Nha_Trang_coastline.jpg) | Tony24986 | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) |
+| [Bãi Kem](https://commons.wikimedia.org/wiki/File:Kem_Beach_aerial_view_Phu_Quoc_Island_Vietnam.jpg) | Vivu Vietnam | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) |
 | [Tràng An](https://commons.wikimedia.org/wiki/File:Trang_An_Landscape_Complex,_Ninh_Binh_Province,_Vietnam,_20240202_1428_5272.jpg) | Jakub Hałun | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) |
 | [Hòn Thơm, Phú Quốc](https://commons.wikimedia.org/wiki/File:Hon_Thom_Cable_Car_aerial_view_Phu_Quoc_Island_Vietnam.jpg) | Vivu Vietnam | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) |
 | [Phố cổ Hội An](https://commons.wikimedia.org/wiki/File:H%E1%BB%99i_An,_Ancient_Town,_2020-01_CN-04.jpg) | Steffen Schmitz (Carschten) | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) |

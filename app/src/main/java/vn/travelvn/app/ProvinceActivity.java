@@ -1,21 +1,14 @@
 package vn.travelvn.app;
 
-import android.content.ActivityNotFoundException;
-import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.net.Uri;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.TextWatcher;
 import android.widget.EditText;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -38,7 +31,6 @@ public final class ProvinceActivity extends TravelScreen {
     };
     private String province = "";
     private String category = "";
-    private int request;
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
@@ -65,7 +57,6 @@ public final class ProvinceActivity extends TravelScreen {
     }
 
     private void provinces() {
-        request++;
         province = category = "";
         screen("Khám phá 63 tỉnh/thành", "Danh mục điểm đến theo tên trước sắp xếp hành chính.");
         EditText search = field(body, "Tìm tỉnh hoặc thành phố", InputType.TYPE_CLASS_TEXT);
@@ -93,7 +84,6 @@ public final class ProvinceActivity extends TravelScreen {
     }
 
     private void categories() {
-        request++;
         category = "";
         screen(province, "Chọn hạng mục để xem địa điểm, ảnh và thông tin từ Google Maps.");
         body.addView(button("Đổi tỉnh/thành", PALE, BLUE, this::provinces));
@@ -115,77 +105,15 @@ public final class ProvinceActivity extends TravelScreen {
     private void results(String item) {
         category = item;
         String area = province.equals("Thừa Thiên Huế") ? "Huế" : province;
-        int id = ++request;
         screen(item, province);
-        LinearLayout controls = card(body);
-        label(controls, "Google Maps", 13, INK, true);
-        TextView status = label(controls, "Đang tìm địa điểm có ảnh…", 14, MUTED, false);
-        controls.addView(button("Tìm trên Google Maps", PALE, BLUE, () -> open("https://www.google.com/maps/search/?api=1&query="
-                + Uri.encode(item + " tại " + area + ", Việt Nam"))));
-        controls.addView(button("Đổi hạng mục", WHITE, BLUE, this::categories));
+        body.addView(button("Đổi hạng mục", PALE, BLUE, this::categories));
+        space(body, 12);
         LinearLayout list = column();
         body.addView(list);
-        new Thread(() -> {
-            try {
-                JSONObject response = TravelCloud.backend(this, "/api/places", new JSONObject().put("province", area).put("category", item));
-                JSONArray places = response.getJSONArray("places");
-                runOnUiThread(() -> {
-                    if (!current(id)) return;
-                    status.setText(places.length() == 0 ? "Chưa tìm thấy địa điểm có ảnh cho hạng mục này." : places.length() + " địa điểm có ảnh");
-                });
-                for (int i = 0; i < places.length(); i++) {
-                    JSONObject place = places.optJSONObject(i);
-                    if (place == null) continue;
-                    Bitmap bitmap = image(place.optString("photoUrl"));
-                    runOnUiThread(() -> {
-                        if (current(id)) showPlace(list, place, bitmap);
-                        else if (bitmap != null) bitmap.recycle();
-                    });
-                }
-            } catch (Exception error) {
-                runOnUiThread(() -> {
-                    if (!current(id)) return;
-                    status.setText(error instanceof TravelCloud.ApiError ? error.getMessage() : "Chưa tải được địa điểm. Hãy thử lại.");
-                    controls.addView(button("Thử lại", WHITE, BLUE, () -> results(item)));
-                });
-            }
-        }, "travel-places").start();
+        new PlaceFeed(this, list, area, item, "");
     }
 
-    private boolean current(int id) {
-        return !isFinishing() && !isDestroyed() && request == id;
-    }
-
-    private void showPlace(LinearLayout list, JSONObject place, Bitmap bitmap) {
-        LinearLayout card = card(list);
-        if (bitmap != null) {
-            ImageView photo = new ImageView(this);
-            photo.setScaleType(ImageView.ScaleType.CENTER_CROP);
-            photo.setBackground(round(PALE, 21));
-            photo.setClipToOutline(true);
-            photo.setImageBitmap(bitmap);
-            photo.setContentDescription("Ảnh " + place.optString("title"));
-            card.addView(photo, new LinearLayout.LayoutParams(-1, dp(155)));
-            credits(card, place.optJSONArray("authors"), "displayName", "uri");
-        } else label(card, "Ảnh hiện chưa tải được", 12, MUTED, false);
-        label(card, place.optString("title"), 19, INK, true);
-        label(card, place.optString("address"), 14, MUTED, false);
-        credits(card, place.optJSONArray("attributions"), "provider", "providerUri");
-        card.addView(button("Mở trên Google Maps", PALE, BLUE, () -> open(place.optString("url"))));
-    }
-
-    private void credits(LinearLayout card, JSONArray items, String name, String uri) {
-        if (items == null) return;
-        for (int i = 0; i < items.length(); i++) {
-            JSONObject credit = items.optJSONObject(i);
-            if (credit == null || credit.optString(name).isEmpty()) continue;
-            String url = credit.optString(uri);
-            if (url.startsWith("https://")) card.addView(button(credit.optString(name), WHITE, BLUE, () -> open(url)));
-            else label(card, credit.optString(name), 12, MUTED, false);
-        }
-    }
-
-    private Bitmap image(String address) {
+    static Bitmap image(String address) {
         HttpURLConnection connection = null;
         try {
             URI uri = URI.create(address);
@@ -213,11 +141,4 @@ public final class ProvinceActivity extends TravelScreen {
         }
     }
 
-    private void open(String address) {
-        if (!address.startsWith("https://")) return;
-        try { startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(address))); }
-        catch (ActivityNotFoundException error) {
-            android.widget.Toast.makeText(this, "Thiết bị chưa có ứng dụng để mở liên kết.", android.widget.Toast.LENGTH_SHORT).show();
-        }
-    }
 }
