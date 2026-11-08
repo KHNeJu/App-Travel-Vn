@@ -170,6 +170,46 @@ public final class MainActivity extends TravelScreen {
         }
         if (wizardStep >= 0) showWizard();
         else showTab(tab);
+        handlePlaceIntent(getIntent());
+    }
+
+    @Override protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        handlePlaceIntent(intent);
+    }
+
+    private void handlePlaceIntent(Intent intent) {
+        String place = intent.getStringExtra("addPlace");
+        if (place == null) return;
+        intent.removeExtra("addPlace");
+        String area = intent.getStringExtra("placeArea");
+        if (place.trim().isEmpty() || place.length() > 180 || area == null || area.trim().isEmpty() || area.length() > 80) return;
+        addPlaceToTrip(place, area);
+    }
+
+    void addPlaceToTrip(String place, String area) {
+        if (trips.isEmpty()) {
+            new AlertDialog.Builder(this).setTitle("Bạn chưa có chuyến đi")
+                    .setMessage("Tạo chuyến đi để thêm " + place + " vào lịch trình.")
+                    .setNegativeButton("Hủy", null).setPositiveButton("Tạo chuyến", (d, w) -> createTrip(area, place)).show();
+            return;
+        }
+        String[] choices = trips.stream().map(item -> item.title() + " · " + item.destination()).toArray(String[]::new);
+        new AlertDialog.Builder(this).setTitle("Thêm vào chuyến").setItems(choices, (dialog, index) -> {
+            Trip selected = trips.get(index);
+            String[] days = new String[selected.days()];
+            for (int i = 0; i < days.length; i++) days[i] = "Ngày " + (i + 1);
+            new AlertDialog.Builder(this).setTitle("Chọn ngày").setItems(days, (picker, dayIndex) -> {
+                List<String> plan = activities(selected, dayIndex);
+                if (plan.stream().anyMatch(entry -> entry.length() >= 5 && entry.substring(5).trim().equals(place))) {
+                    notifyUser("Điểm này đã có trong lịch ngày " + (dayIndex + 1) + ".");
+                    return;
+                }
+                plan.add("09:00   " + place);
+                plan.sort(String::compareTo);
+                if (writeArray(activityKey(selected, dayIndex), new JSONArray(plan))) notifyUser("Đã thêm vào " + days[dayIndex]);
+            }).setNegativeButton("Hủy", null).show();
+        }).setNegativeButton("Hủy", null).show();
     }
 
     @Override
@@ -741,6 +781,10 @@ public final class MainActivity extends TravelScreen {
     }
 
     private void createTrip(String suggestedDestination) {
+        createTrip(suggestedDestination, "");
+    }
+
+    private void createTrip(String suggestedDestination, String firstStop) {
         wizardStep = 0;
         destination = suggestedDestination;
         startAt = 0;
@@ -748,6 +792,7 @@ public final class MainActivity extends TravelScreen {
         tripBudget = 0;
         travelers = 1;
         chosenStops.clear();
+        if (!firstStop.isEmpty()) chosenStops.add(firstStop);
         showWizard();
     }
 
@@ -892,11 +937,11 @@ public final class MainActivity extends TravelScreen {
         wizardTitle("Chọn địa điểm bạn thích", "Chọn các điểm muốn đưa vào chuyến " + destination + ".");
         TravelCatalog.Destination city = TravelCatalog.destination(destination);
         addPhoto(content, city, 116);
-        int count = 0;
+        LinkedHashSet<String> candidates = new LinkedHashSet<>(chosenStops);
         for (TravelCatalog.Place stop : TravelCatalog.PLACES) {
-            if (!TravelCatalog.fold(stop.city()).equals(TravelCatalog.fold(destination))) continue;
-            count++;
-            String name = stop.name();
+            if (TravelCatalog.fold(stop.city()).equals(TravelCatalog.fold(destination))) candidates.add(stop.name());
+        }
+        for (String name : candidates) {
             CheckBox item = new CheckBox(this);
             item.setText(name);
             item.setMinHeight(dp(52));
@@ -907,7 +952,7 @@ public final class MainActivity extends TravelScreen {
             });
             card(content, WHITE).addView(item);
         }
-        if (count == 0) line(card(content, WHITE), "Bạn có thể tự thêm điểm hoặc mở trợ lý để tìm hiểu về " + destination + ".", 15, MUTED, false);
+        if (candidates.isEmpty()) line(card(content, WHITE), "Bạn có thể tự thêm điểm hoặc mở trợ lý để tìm hiểu về " + destination + ".", 15, MUTED, false);
         footer.addView(action("Hỏi trợ lý về lịch trình", NAVY, WHITE, () -> finishWizard(false, true)));
         footer.addView(action("Tự tạo lịch trình từng ngày", WHITE, NAVY, () -> finishWizard(true, false)));
     }
@@ -990,7 +1035,7 @@ public final class MainActivity extends TravelScreen {
     private void addPhoto(LinearLayout parent, TravelCatalog.Destination city, int height) {
         if (city == null) return;
         ImageView photo = new ImageView(this);
-        photo.setImageResource(city.image());
+        ExplorePhoto.bind(photo, city.image());
         photo.setScaleType(ImageView.ScaleType.CENTER_CROP);
         photo.setContentDescription("Ảnh " + city.name() + " của " + city.author());
         parent.addView(photo, new LinearLayout.LayoutParams(-1, dp(height)));
@@ -1190,14 +1235,11 @@ public final class MainActivity extends TravelScreen {
         gap(content, 12);
         LinearLayout section = column();
         content.addView(section);
-        LinearLayout extras = column();
-        content.addView(extras);
         Runnable refresh = () -> {
             boolean guide = exploreCategory == 1;
             search.setHint(guide ? "Tìm theo điểm đến, vd. Đà Lạt" : "Tìm nơi, món ăn, chỗ ở");
             areaBar.removeAllViews();
             section.removeAllViews();
-            extras.removeAllViews();
             for (int i = 0; i < chips.getChildCount(); i++) {
                 TextView chip = (TextView) chips.getChildAt(i);
                 boolean active = i == exploreCategory;
@@ -1208,6 +1250,12 @@ public final class MainActivity extends TravelScreen {
                 chip.setTextColor(active ? WHITE : NAVY);
             }
             if (guide) {
+                if (exploreQuery.isEmpty()) {
+                    exploreGuideStrip(section, false, false);
+                    gap(section, 27);
+                    exploreGuideStrip(section, true, false);
+                    gap(section, 25);
+                }
                 exploreGuides(section);
                 return;
             }
@@ -1217,15 +1265,24 @@ public final class MainActivity extends TravelScreen {
             choose.setContentDescription("Đổi khu vực, hiện tại " + area);
             areaBar.addView(choose, new LinearLayout.LayoutParams(0, -2, 1));
             areaBar.addView(action("63 tỉnh/thành  ›", TINT, BLUE, () -> startActivity(new Intent(this, ProvinceActivity.class))));
+            boolean overview = exploreCategory == 0 && exploreQuery.isEmpty();
+            if (overview) {
+                exploreGuideStrip(section, false, true);
+                gap(section, 28);
+                exploreGuideStrip(section, true, true);
+                gap(section, 28);
+            }
             LinearLayout results = column();
             section.addView(results);
-            new PlaceFeed(this, results, area, EXPLORE_FILTERS[exploreCategory], exploreQuery);
-            if (exploreCategory == 0 && exploreQuery.isEmpty()) {
-                gap(extras, 18);
-                line(extras, "Điểm đến nổi bật", 21, NAVY, true);
-                gap(extras, 10);
-                destinationGallery(extras);
-                if (TravelCatalog.destination(exploreCity) != null) places(extras, true);
+            new PlaceFeed(this, results, area, EXPLORE_FILTERS[exploreCategory], exploreQuery,
+                    overview ? "Gần bạn" : "", null);
+            if (overview) {
+                gap(section, 28);
+                exploreHighlights(section);
+                gap(section, 27);
+                LinearLayout lodging = column();
+                section.addView(lodging);
+                new PlaceFeed(this, lodging, area, "Chỗ ở", "", "Chỗ ở gợi ý", () -> selectExplore(area, 2));
             }
         };
         Runnable submit = () -> {
@@ -1256,6 +1313,135 @@ public final class MainActivity extends TravelScreen {
         }
         strip.post(() -> strip.scrollTo(chips.getChildAt(exploreCategory).getLeft() - dp(12), 0));
         refresh.run();
+    }
+
+    private record ExploreStory(String area, String image, String title, String subtitle, String summary) {}
+
+    private static final ExploreStory[] EXPLORE_ITINERARIES = {
+        new ExploreStory("Hà Giang", "ha_giang", "4 ngày khám phá vòng cung Hà Giang", "4 ngày · Nhóm bạn",
+                "Ngày 1: Hà Giang – Quản Bạ – Yên Minh.\nNgày 2: Phố Cáo – Sủng Là – Đồng Văn.\nNgày 3: Mã Pí Lèng – sông Nho Quế – Mèo Vạc.\nNgày 4: Trở về trung tâm Hà Giang."),
+        new ExploreStory("Đà Lạt", "Đà Lạt", "3 ngày Đà Lạt thong thả", "3 ngày · Cặp đôi",
+                "Ngày 1: Hồ Xuân Hương và chợ Đà Lạt.\nNgày 2: Ga Đà Lạt, chùa Linh Phước và một quán cà phê.\nNgày 3: Hồ Tuyền Lâm và Thiền viện Trúc Lâm."),
+        new ExploreStory("Ninh Bình", "Ninh Bình", "Ninh Bình cuối tuần", "3 ngày · Nhóm bạn",
+                "Đi thuyền ở Tràng An, ghé cố đô Hoa Lư rồi dành một buổi sáng cho Tam Cốc.")
+    };
+
+    private static final ExploreStory[] EXPLORE_TIPS = {
+        new ExploreStory("Hà Giang", "ha_giang", "Đi Hà Giang bằng xe máy hay xe tour?", "Đi lại · Hà Giang",
+                "Xe tour thuận tiện khi nhóm muốn nghỉ ngơi giữa các chặng. Nếu tự đi xe máy, hãy kiểm tra phanh, lốp và dự báo thời tiết trước khi lên đèo. Chia chặng vừa sức và ưu tiên di chuyển ban ngày."),
+        new ExploreStory("Đà Lạt", "Đà Lạt", "Chuẩn bị gì cho chuyến Đà Lạt?", "Chuẩn bị · Đà Lạt",
+                "Mang áo khoác nhẹ để đi sớm hoặc về muộn. Xếp các điểm trung tâm trong cùng một buổi và giữ một phương án trong nhà nếu trời mưa."),
+        new ExploreStory("Hà Nội", "ho_hoan_kiem", "Dạo Hồ Gươm và phố cổ", "Tham quan · Hà Nội",
+                "Bắt đầu ở Hồ Hoàn Kiếm, ghé đền Ngọc Sơn rồi đi bộ qua các phố quanh chợ Đồng Xuân. Chọn một điểm nghỉ giữa buổi để có thời gian thưởng thức cà phê.")
+    };
+
+    private void selectExplore(String area, int category) {
+        exploreCity = area;
+        exploreCategory = category;
+        exploreQuery = "";
+        showTab(EXPLORE);
+    }
+
+    private void exploreGuideStrip(LinearLayout parent, boolean tips, boolean link) {
+        LinearLayout header = row();
+        header.setGravity(Gravity.CENTER_VERTICAL);
+        line(header, tips ? "Hướng dẫn du lịch" : "Cẩm nang du lịch", 22, NAVY, true)
+                .setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
+        if (link) header.addView(action("Tất cả", PAGE, BLUE, () -> selectExplore(exploreCity, 1)));
+        parent.addView(header);
+        line(parent, tips ? "Mẹo đi lại, ăn uống và chuẩn bị hành lý" : "Lịch trình gợi ý từ Travel VN", 14, MUTED, false);
+        gap(parent, 12);
+        HorizontalScrollView scroll = new HorizontalScrollView(this);
+        scroll.setHorizontalScrollBarEnabled(false);
+        LinearLayout cards = row();
+        for (ExploreStory story : tips ? EXPLORE_TIPS : EXPLORE_ITINERARIES) {
+            LinearLayout card = column();
+            LinearLayout.LayoutParams size = new LinearLayout.LayoutParams(dp(224), -2);
+            size.rightMargin = dp(12);
+            cards.addView(card, size);
+            FrameLayout cover = exploreCover(story.image(), 150);
+            TextView badge = new TextView(this);
+            badge.setText("Nổi bật");
+            badge.setTextColor(NAVY);
+            badge.setTextSize(12);
+            badge.setPadding(dp(11), dp(5), dp(11), dp(5));
+            badge.setBackground(rounded(WHITE, 20));
+            FrameLayout.LayoutParams badgeSize = new FrameLayout.LayoutParams(-2, -2, Gravity.TOP | Gravity.START);
+            badgeSize.setMargins(dp(9), dp(9), 0, 0);
+            cover.addView(badge, badgeSize);
+            card.addView(cover, new LinearLayout.LayoutParams(-1, dp(150)));
+            gap(card, 8);
+            line(card, story.title(), 16, NAVY, true).setMinLines(2);
+            line(card, story.subtitle(), 13, MUTED, false);
+            gap(card, 4);
+            line(card, "✈  Travel VN", 12, BLUE, true);
+            card.setFocusable(true);
+            card.setOnClickListener(view -> openExploreStory(story));
+        }
+        scroll.addView(cards);
+        parent.addView(scroll);
+    }
+
+    private FrameLayout exploreCover(String key, int height) {
+        FrameLayout frame = new FrameLayout(this);
+        frame.setBackground(rounded(TINT, height < 80 ? 14 : 20));
+        frame.setClipToOutline(true);
+        ExplorePhoto photo = ExplorePhoto.lookup(key);
+        if (photo != null) {
+            ImageView image = new ImageView(this);
+            ExplorePhoto.bind(image, photo.image());
+            image.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            image.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+            frame.addView(image, new FrameLayout.LayoutParams(-1, -1));
+        } else frame.addView(new TravelIcon(this, 2, BLUE), new FrameLayout.LayoutParams(dp(28), dp(28), Gravity.CENTER));
+        return frame;
+    }
+
+    private void openExploreStory(ExploreStory story) {
+        LinearLayout panel = column();
+        panel.setPadding(dp(18), 0, dp(18), dp(12));
+        panel.addView(exploreCover(story.image(), 170), new LinearLayout.LayoutParams(-1, dp(170)));
+        ExplorePhoto photo = ExplorePhoto.lookup(story.image());
+        if (photo != null) panel.addView(action(photo.author() + " · " + photo.license(), WHITE, BLUE,
+                () -> openLink(photo.url())));
+        line(panel, story.summary(), 15, NAVY, false);
+        new AlertDialog.Builder(this).setTitle(story.title()).setView(panel).setNegativeButton("Đóng", null)
+                .setPositiveButton("Xem khu vực", (dialog, which) -> selectExplore(story.area(), 0)).show();
+    }
+
+    private void exploreHighlights(LinearLayout parent) {
+        line(parent, "Điểm đến nổi bật", 22, NAVY, true);
+        gap(parent, 10);
+        String[][] picks = {
+            {"Đà Lạt", "Đà Lạt", "Dạo hồ Xuân Hương và ghé những quán cà phê bên sườn đồi."},
+            {"Hà Giang", "ha_giang", "Qua cao nguyên đá Đồng Văn, theo đường đèo xuống sông Nho Quế."},
+            {"Hà Nội", "ho_hoan_kiem", "Dạo phố cổ, ghé Hồ Gươm và các di tích giữa lòng thủ đô."},
+            {"Cao Bằng", "cao_bang", "Khám phá thác Bản Giốc và những thung lũng núi đá vôi."},
+            {"Đà Nẵng", "Đà Nẵng", "Dạo biển Mỹ Khê, ngắm sông Hàn và khám phá bán đảo Sơn Trà."}
+        };
+        for (int i = 0; i < picks.length; i++) {
+            String[] pick = picks[i];
+            LinearLayout entry = row();
+            entry.setGravity(Gravity.CENTER_VERTICAL);
+            entry.setPadding(0, dp(10), 0, dp(10));
+            line(entry, Integer.toString(i + 1), 26, BLUE, true).setWidth(dp(36));
+            entry.addView(exploreCover(pick[1], 65), new LinearLayout.LayoutParams(dp(65), dp(65)));
+            LinearLayout copy = column();
+            copy.setPadding(dp(12), 0, 0, 0);
+            line(copy, pick[0], 17, NAVY, true);
+            TextView description = line(copy, pick[2], 14, MUTED, false);
+            description.setMaxLines(2);
+            description.setEllipsize(TextUtils.TruncateAt.END);
+            entry.addView(copy, new LinearLayout.LayoutParams(0, -2, 1));
+            entry.setFocusable(true);
+            entry.setOnClickListener(view -> selectExplore(pick[0], 0));
+            parent.addView(entry);
+            View divider = new View(this);
+            divider.setBackgroundColor(BORDER);
+            parent.addView(divider, new LinearLayout.LayoutParams(-1, dp(1)));
+        }
+        parent.addView(action("Xem thêm điểm đến", PAGE, BLUE,
+                () -> startActivity(new Intent(this, ProvinceActivity.class))));
     }
 
     private void pickExploreArea(EditText search) {
@@ -2016,16 +2202,23 @@ public final class MainActivity extends TravelScreen {
     }
 
     private void bookmarks() {
-        List<TravelCatalog.Place> saved = new ArrayList<>();
-        List<String> labels = new ArrayList<>();
-        for (TravelCatalog.Place place : TravelCatalog.PLACES) {
-            if (!storage.getBoolean("bookmark:" + place.city() + ":" + place.name(), false)) continue;
-            saved.add(place);
-            labels.add(place.name() + " · " + place.city());
-        }
+        List<String> saved = new ArrayList<>();
+        storage.getAll().forEach((key, value) -> {
+            if (key.startsWith("bookmark:") && Boolean.TRUE.equals(value) && key.indexOf(':', 9) > 9) saved.add(key);
+        });
+        saved.sort(String::compareToIgnoreCase);
         AlertDialog.Builder dialog = new AlertDialog.Builder(this).setTitle("Địa điểm đã lưu").setNegativeButton("Đóng", null);
         if (saved.isEmpty()) dialog.setMessage("Bấm Lưu địa điểm trong tab Khám phá để xem lại tại đây.");
-        else dialog.setItems(labels.toArray(new String[0]), (popup, index) -> openMaps(labels.get(index)));
+        else dialog.setItems(saved.stream().map(key -> {
+            String[] fields = key.split(":", 3);
+            return fields[2] + " · " + fields[1];
+        }).toArray(String[]::new), (popup, index) -> {
+            String[] fields = saved.get(index).split(":", 3);
+            exploreCity = fields[1];
+            exploreCategory = 0;
+            exploreQuery = fields[2];
+            showTab(EXPLORE);
+        });
         dialog.show();
     }
 

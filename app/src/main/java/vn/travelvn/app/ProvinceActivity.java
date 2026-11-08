@@ -85,7 +85,7 @@ public final class ProvinceActivity extends TravelScreen {
 
     private void categories() {
         category = "";
-        screen(province, "Chọn hạng mục để xem địa điểm, ảnh và thông tin từ Google Maps.");
+        screen(province, "Chọn hạng mục để xem địa điểm ngay trong Travel VN.");
         body.addView(button("Đổi tỉnh/thành", PALE, BLUE, this::provinces));
         space(body, 12);
         for (int i = 0; i < CATEGORIES.length; i += 2) {
