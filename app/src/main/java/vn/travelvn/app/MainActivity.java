@@ -1229,16 +1229,11 @@ public final class MainActivity extends TravelScreen {
         strip.addView(chips);
         content.addView(strip);
         gap(content, 13);
-        LinearLayout areaBar = row();
-        areaBar.setGravity(Gravity.CENTER_VERTICAL);
-        content.addView(areaBar);
-        gap(content, 12);
         LinearLayout section = column();
         content.addView(section);
         Runnable refresh = () -> {
             boolean guide = exploreCategory == 1;
-            search.setHint(guide ? "Tìm theo điểm đến, vd. Đà Lạt" : "Tìm nơi, món ăn, chỗ ở");
-            areaBar.removeAllViews();
+            search.setHint(guide ? "Tìm theo điểm đến, vd. Đà Lạt" : "Tìm địa điểm, món ăn hoặc tỉnh thành");
             section.removeAllViews();
             for (int i = 0; i < chips.getChildCount(); i++) {
                 TextView chip = (TextView) chips.getChildAt(i);
@@ -1261,10 +1256,6 @@ public final class MainActivity extends TravelScreen {
             }
             Trip upcoming = signedIn() ? homeTrip() : null;
             String area = exploreCity.isEmpty() ? (upcoming != null ? upcoming.destination() : "Hà Nội") : exploreCity;
-            TextView choose = action(area + "  ▾", WHITE, NAVY, () -> pickExploreArea(search));
-            choose.setContentDescription("Đổi khu vực, hiện tại " + area);
-            areaBar.addView(choose, new LinearLayout.LayoutParams(0, -2, 1));
-            areaBar.addView(action("63 tỉnh/thành  ›", TINT, BLUE, () -> startActivity(new Intent(this, ProvinceActivity.class))));
             boolean overview = exploreCategory == 0 && exploreQuery.isEmpty();
             if (overview) {
                 exploreGuideStrip(section, false, true);
@@ -1287,6 +1278,14 @@ public final class MainActivity extends TravelScreen {
         };
         Runnable submit = () -> {
             exploreQuery = search.getText().toString().trim();
+            if (exploreCategory != 1 && !exploreQuery.isEmpty()) {
+                String destination = exploreAreaNamed(exploreQuery);
+                if (destination != null) {
+                    exploreCity = destination;
+                    exploreQuery = "";
+                    search.setText("");
+                }
+            }
             InputMethodManager keyboard = getSystemService(InputMethodManager.class);
             if (keyboard != null) keyboard.hideSoftInputFromWindow(search.getWindowToken(), 0);
             search.clearFocus();
@@ -1444,38 +1443,11 @@ public final class MainActivity extends TravelScreen {
                 () -> startActivity(new Intent(this, ProvinceActivity.class))));
     }
 
-    private void pickExploreArea(EditText search) {
-        LinearLayout panel = column();
-        panel.setPadding(dp(18), 0, dp(18), 0);
-        EditText find = field(panel, "Tìm điểm đến hoặc tỉnh/thành", InputType.TYPE_CLASS_TEXT, 45);
-        LinearLayout list = column();
-        ScrollView scroll = new ScrollView(this);
-        scroll.addView(list);
-        panel.addView(scroll, new LinearLayout.LayoutParams(-1, dp(300)));
-        AlertDialog dialog = new AlertDialog.Builder(this).setTitle("Chọn khu vực").setView(panel)
-                .setNegativeButton("Hủy", null).create();
-        LinkedHashSet<String> choices = new LinkedHashSet<>(java.util.Arrays.asList(DESTINATIONS));
-        choices.addAll(java.util.Arrays.asList(ProvinceActivity.PROVINCES));
-        Runnable update = () -> {
-            list.removeAllViews();
-            String keyword = TravelCatalog.fold(find.getText().toString());
-            for (String city : choices) if (TravelCatalog.fold(city).contains(keyword)) {
-                list.addView(action(city, WHITE, NAVY, () -> {
-                    exploreCity = city.equals("Thừa Thiên Huế") ? "Huế" : city;
-                    exploreQuery = search.getText().toString().trim();
-                    dialog.dismiss();
-                    showTab(EXPLORE);
-                }));
-            }
-            if (list.getChildCount() == 0) line(list, "Không tìm thấy khu vực phù hợp.", 14, MUTED, false);
-        };
-        find.addTextChangedListener(new android.text.TextWatcher() {
-            @Override public void beforeTextChanged(CharSequence s, int a, int c, int f) {}
-            @Override public void onTextChanged(CharSequence s, int a, int before, int count) { update.run(); }
-            @Override public void afterTextChanged(android.text.Editable s) {}
-        });
-        update.run();
-        dialog.show();
+    private static String exploreAreaNamed(String name) {
+        String keyword = PlaceFeed.areaKey(name);
+        for (String area : DESTINATIONS) if (PlaceFeed.areaKey(area).equals(keyword)) return area;
+        for (String area : ProvinceActivity.PROVINCES) if (PlaceFeed.areaKey(area).equals(keyword)) return area;
+        return null;
     }
 
     private void exploreGuides(LinearLayout panel) {

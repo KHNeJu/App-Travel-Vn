@@ -40,6 +40,7 @@ import java.util.Comparator;
 import java.util.Currency;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Consumer;
 
 final class PlaceFeed {
     private static final Locale VI = Locale.forLanguageTag("vi-VN");
@@ -65,7 +66,7 @@ final class PlaceFeed {
 
     private static final class Place {
         final JSONObject data;
-        final List<ImageView> images = new ArrayList<>();
+        final List<Consumer<Bitmap>> images = new ArrayList<>();
         Bitmap photo;
         Place(JSONObject data) { this.data = data; }
         String title() { return data.optString("title"); }
@@ -75,6 +76,38 @@ final class PlaceFeed {
         boolean osm() { return data.optBoolean("osm"); }
         double rating() { return data.optDouble("rating", 0); }
         int reviews() { return data.optInt("reviewCount"); }
+    }
+
+    private record CategoryContent(String cover, String type, String tip) {}
+
+    private CategoryContent categoryContent(Place place) {
+        return switch (categoryLabel(place)) {
+            case "Ăn uống" -> new CategoryContent("food", "một điểm ăn uống",
+                    "Bạn có thể thêm nơi này làm điểm dừng cho bữa ăn. Hãy kiểm tra thực đơn, giá và giờ phục vụ trước khi ghé.");
+            case "Cà phê" -> new CategoryContent("coffee", "một điểm dừng thuộc nhóm cà phê và đồ uống",
+                    "Nếu định ghé để nghỉ giữa các chặng, bạn có thể kiểm tra trước giờ mở cửa và vị trí trên tuyến đường của mình.");
+            case "Chỗ ở" -> new CategoryContent("hotel_room", "một cơ sở lưu trú",
+                    "Hãy tra giá theo đúng ngày lưu trú và kiểm tra giờ nhận phòng, điều kiện hủy trước khi đặt.");
+            case "Mua sắm" -> new CategoryContent("ben_thanh", "một địa điểm mua sắm",
+                    "Bạn có thể dành một khoảng trống trong lịch trình để ghé. Hãy kiểm tra giờ hoạt động và giá tại nơi bán.");
+            case "Lịch sử" -> new CategoryContent("van_mieu", "một điểm tìm hiểu lịch sử và văn hóa",
+                    "Bạn có thể tìm hiểu thông tin tại điểm tham quan và kiểm tra giờ đón khách trước khi đi.");
+            case "Biển" -> new CategoryContent("my_khe", "một điểm đến ven biển hoặc trên đảo",
+                    "Hãy xem dự báo thời tiết và điều kiện đi biển trước khi xếp nơi này vào lịch trình.");
+            case "Thiên nhiên", "Thắng cảnh" -> new CategoryContent("tra_su", "một điểm khám phá thiên nhiên",
+                    "Hãy kiểm tra thời tiết và đường vào để dự tính thời gian di chuyển.");
+            case "Giải trí" -> new CategoryContent("suoi_tien", "một địa điểm vui chơi hoặc giải trí",
+                    "Nếu dự định ghé vào cuối tuần, bạn có thể kiểm tra lịch hoạt động và giá vé nếu có.");
+            case "Tham quan", "Địa danh", "Du lịch" -> new CategoryContent("chua_cau", "một điểm tham quan",
+                    "Bạn có thể xem vị trí trên bản đồ để xếp địa điểm này cùng các điểm dừng lân cận.");
+            default -> new CategoryContent("Hội An", "một địa điểm",
+                    "Bạn có thể xem địa chỉ và đường đi trên bản đồ để chuẩn bị trước khi ghé.");
+        };
+    }
+
+    private String categoryLabel(Place place) {
+        String primary = place.data.optString("category", category).split("\\|", 2)[0];
+        return "Tất cả".equals(primary) ? "Địa điểm" : primary;
     }
 
     PlaceFeed(TravelScreen host, LinearLayout panel, String area, String category, String query) {
@@ -133,7 +166,8 @@ final class PlaceFeed {
                     host.runOnUiThread(() -> {
                         if (!current()) { photo.recycle(); return; }
                         place.photo = photo;
-                        for (ImageView view : place.images) view.setImageBitmap(photo);
+                        for (Consumer<Bitmap> bind : place.images) bind.accept(photo);
+                        place.images.clear();
                     });
                 }
             } catch (Exception error) {
@@ -200,11 +234,11 @@ final class PlaceFeed {
         return localPlaces.isEmpty() ? otherAreas : localPlaces;
     }
 
-    private static String areaKey(String name) {
+    static String areaKey(String name) {
         String key = TravelCatalog.fold(name);
         return switch (key) {
             case "thua thien hue" -> "hue";
-            case "ho chi minh", "thanh pho ho chi minh" -> "tp. ho chi minh";
+            case "ho chi minh", "thanh pho ho chi minh", "tp ho chi minh", "sai gon" -> "tp. ho chi minh";
             default -> key;
         };
     }
@@ -420,16 +454,33 @@ final class PlaceFeed {
         FrameLayout frame = new FrameLayout(host);
         frame.setBackground(host.round(PALE, height < 70 ? 14 : 21));
         frame.setClipToOutline(true);
-        TravelIcon placeholder = new TravelIcon(host, 2, MUTED);
-        frame.addView(placeholder, new FrameLayout.LayoutParams(host.dp(25), host.dp(25), Gravity.CENTER));
         ImageView photo = new ImageView(host);
         photo.setScaleType(ImageView.ScaleType.CENTER_CROP);
         photo.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-        if (place.photo != null) photo.setImageBitmap(place.photo);
-        ExplorePhoto illustration = place.illustration();
-        if (illustration != null) ExplorePhoto.bind(photo, illustration.image());
-        if (!offline && !place.osm()) place.images.add(photo);
         frame.addView(photo, new FrameLayout.LayoutParams(-1, -1));
+        if (place.photo != null) {
+            photo.setImageBitmap(place.photo);
+            return frame;
+        }
+        ExplorePhoto specific = place.illustration();
+        ExplorePhoto cover = specific == null ? ExplorePhoto.lookup(categoryContent(place).cover()) : specific;
+        if (cover != null) ExplorePhoto.bind(photo, cover.image());
+        TextView note = new TextView(host);
+        if (specific == null) {
+            note.setText(height < 70 ? "Minh họa" : "Ảnh minh họa");
+            note.setContentDescription("Ảnh minh họa theo hạng mục");
+            note.setTextSize(height < 70 ? 9 : 11);
+            note.setTextColor(WHITE);
+            note.setBackground(host.round(0xD9102746, 8));
+            note.setPadding(host.dp(4), host.dp(2), host.dp(4), host.dp(2));
+            FrameLayout.LayoutParams badge = new FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM | Gravity.START);
+            badge.setMargins(host.dp(3), 0, host.dp(3), host.dp(3));
+            frame.addView(note, badge);
+        }
+        if (!place.data.optString("photoUrl").isEmpty()) place.images.add(bitmap -> {
+            photo.setImageBitmap(bitmap);
+            note.setVisibility(View.GONE);
+        });
         return frame;
     }
 
@@ -487,13 +538,10 @@ final class PlaceFeed {
         scroll.addView(story);
 
         FrameLayout cover = new FrameLayout(host);
-        boolean hasPhoto = place.photo != null || place.illustration() != null || !place.data.optString("photoUrl").isEmpty();
-        if (hasPhoto) {
-            View image = photo(place, 272);
-            image.setClipToOutline(false);
-            cover.addView(image, new FrameLayout.LayoutParams(-1, -1));
-        } else cover.setBackgroundColor(PALE);
-        story.addView(cover, new LinearLayout.LayoutParams(-1, host.dp(hasPhoto ? 272 : 70)));
+        View image = photo(place, 272);
+        image.setClipToOutline(false);
+        cover.addView(image, new FrameLayout.LayoutParams(-1, -1));
+        story.addView(cover, new LinearLayout.LayoutParams(-1, host.dp(272)));
         TextView back = host.button("←", WHITE, INK, dialog::dismiss);
         back.setContentDescription("Quay lại");
         placeControl(cover, back, Gravity.START);
@@ -510,9 +558,7 @@ final class PlaceFeed {
         LinearLayout detail = host.column();
         detail.setPadding(host.dp(18), host.dp(18), host.dp(18), host.dp(24));
         story.addView(detail);
-        String categoryLabel = place.data.optString("category", category);
-        if ("Tất cả".equals(categoryLabel)) categoryLabel = "Địa điểm";
-        TextView eyebrow = host.label(detail, categoryLabel.split("\\|")[0].toUpperCase(VI)
+        TextView eyebrow = host.label(detail, categoryLabel(place).toUpperCase(VI)
                 + " · " + place.area().toUpperCase(VI), 12, BLUE, true);
         eyebrow.setLetterSpacing(.08f);
         host.space(detail, 5);
@@ -520,16 +566,23 @@ final class PlaceFeed {
         String address = place.data.optString("address");
         if (!address.isEmpty()) host.label(detail, address, 14, MUTED, false);
         if (place.rating() > 0) host.label(detail, metadata(place), 14, INK, true);
-        String description = place.data.optString("description");
+        String description = place.data.optString("description").trim();
+        CategoryContent categoryInfo = categoryContent(place);
+        if (description.isEmpty()) description = place.title() + " là " + categoryInfo.type()
+                + " tại " + place.area() + ". " + categoryInfo.tip();
         host.space(detail, 23);
         host.label(detail, "Giới thiệu", 20, INK, true);
         host.space(detail, 7);
-        TextView intro = host.label(detail, description.isEmpty() ? "Địa điểm thuộc danh mục "
-                + categoryLabel.split("\\|")[0].toLowerCase(VI) + " tại " + place.area() + "." : description, 15, INK, false);
+        TextView intro = host.label(detail, description, 15, INK, false);
         intro.setLineSpacing(host.dp(3), 1);
         ExplorePhoto illustration = place.illustration();
-        if (illustration != null) detail.addView(host.button("Ảnh · " + illustration.author() + " · " + illustration.license(),
-                WHITE, BLUE, () -> open(illustration.url())));
+        ExplorePhoto credit = illustration == null ? ExplorePhoto.lookup(categoryInfo.cover()) : illustration;
+        if (place.photo == null && credit != null) {
+            TextView source = host.button((illustration == null ? "Ảnh minh họa" : "Ảnh")
+                    + " · " + credit.author() + " · " + credit.license(), WHITE, BLUE, () -> open(credit.url()));
+            detail.addView(source);
+            if (!place.data.optString("photoUrl").isEmpty()) place.images.add(bitmap -> source.setVisibility(View.GONE));
+        }
         credits(detail, place.data.optJSONArray("authors"), "displayName", "uri");
         if (place.osm()) osmCredit(detail);
         else if (!offline) host.label(detail, "Google Maps", 12, MUTED, true);
@@ -544,7 +597,7 @@ final class PlaceFeed {
         credits(detail, place.data.optJSONArray("attributions"), "provider", "providerUri");
         String website = place.data.optString("website");
         if (!website.isEmpty()) detail.addView(host.button("Trang web", WHITE, BLUE, () -> open(website)));
-        if (hotel || categoryLabel.contains("Chỗ ở")) detail.addView(host.button(offline ? "Tra giá phòng trên Google" : "Xem giá theo ngày",
+        if (hotel || place.data.optString("category").contains("Chỗ ở")) detail.addView(host.button(offline ? "Tra giá phòng trên Google" : "Xem giá theo ngày",
                 PALE, BLUE, () -> hotelPrices(place)));
         detail.addView(host.button("Mở bản đồ", WHITE, BLUE, () -> open(place.data.optString("url"))));
         host.space(detail, 22);

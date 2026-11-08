@@ -1,4 +1,4 @@
-An Giang	Thiên nhiên|Tham quan	Rừng tràm Trà Sư					
+An Giang	Thiên nhiên|Tham quan	Rừng tràm Trà Sư	Những hàng tràm và mặt nước phủ bèo tạo nên cảnh quan đặc trưng của Trà Sư. Nếu muốn đi thuyền, hãy hỏi trước về tuyến tham quan và thời gian khởi hành.	tra_su			
 An Giang	Chỗ ở	Nhà trọ Yến Oanh			osm	10.37821	105.43008
 An Giang	Thiên nhiên|Tham quan	Công viên Trịnh Văn Ấn			osm	10.37609	105.43165
 An Giang	Cà phê	Mộc Trà			osm	10.37473	105.43262
@@ -172,7 +172,7 @@ An Giang	Ăn uống	Thủy triều quán			osm	10.46319	105.64439
 An Giang	Ăn uống	Công Thuận			osm	10.46400	105.64450
 An Giang	Chỗ ở	trạm ut thẳng			osm	10.30365	105.64988
 An Giang	Chỗ ở	Trạm dừng chân Út Thẳng			osm	10.30342	105.65004
-Bà Rịa - Vũng Tàu	Biển|Thiên nhiên	Bãi Sau					
+Bà Rịa - Vũng Tàu	Biển|Thiên nhiên	Bãi Sau		bai_sau			
 Bà Rịa - Vũng Tàu	Mua sắm	Tự Chọn 78			osm	10.40966	107.13974
 Bà Rịa - Vũng Tàu	Lịch sử|Tham quan	Tượng đài ghi công Trận đánh Phước Thành			osm	10.41205	107.13758
 Bà Rịa - Vũng Tàu	Chỗ ở	Hoàng Dương			osm	10.41434	107.14247
@@ -672,7 +672,7 @@ Bạc Liêu	Lịch sử|Tham quan	Hòa Tú 1940			osm	9.44015	105.89854
 Bạc Liêu	Chỗ ở	Nhà Mát			osm	9.20417	105.74436
 Bạc Liêu	Mua sắm	Chợ Ông Kho			osm	9.41925	105.69197
 Bạc Liêu	Mua sắm	Chợ Vĩnh Phước			osm	9.31342	105.93377
-Bắc Ninh	Lịch sử|Tham quan	Đền Đô					
+Bắc Ninh	Lịch sử|Tham quan	Đền Đô		den_do			
 Bắc Ninh	Ăn uống	Trâu Giật Phố			osm	21.17950	106.07006
 Bắc Ninh	Cà phê	Chà Kafe			osm	21.18014	106.06946
 Bắc Ninh	Chỗ ở	Le Indochina Hotel Bắc Ninh			osm	21.17954	106.07086
@@ -1619,7 +1619,7 @@ Bình Phước	Cà phê	CF-Chè Bưởi - -Dt741 -Ấp An Bình-An Bình-huyện
 Bình Phước	Ăn uống	QA-Cẩm Giang - -Dt741 -Ấp Nước Vàng-An Bình-huyện phú giáo			osm	11.32444	106.82270
 Bình Phước	Ăn uống	QA-Trúc Vy - -Dt741 -phước vĩnh-huyện phú giáo-0377003923			osm	11.31360	106.81621
 Bình Phước	Ăn uống	QA-Suối Đá - -Tân hiệp- phú giáo-Bình dương-0983063480			osm	11.33722	106.75694
-Bình Thuận	Thiên nhiên|Tham quan	Đồi cát Mũi Né					
+Bình Thuận	Thiên nhiên|Tham quan	Đồi cát Mũi Né	Một điểm dừng ngắm cảnh đồi cát ở khu vực Mũi Né. Buổi sáng sớm hoặc chiều muộn thuận tiện hơn cho việc đi bộ ngoài trời.	doi_cat_mui_ne			
 Bình Thuận	Lịch sử|Tham quan	Bảo tàng Lực lượng vũ trang nhân dân			osm	10.92921	108.10053
 Bình Thuận	Thiên nhiên|Tham quan	Công viên Tháp Nước A			osm	10.92890	108.10008
 Bình Thuận	Ăn uống	Bánh Canh. Hů Tiêu Bánh Mỳ Ôp La			osm	10.92944	108.10121
@@ -1807,7 +1807,7 @@ Bình Thuận	Thiên nhiên|Tham quan	Hòn Rơm			osm	10.95491	108.33526
 Bình Thuận	Lịch sử|Tham quan	Biggest sleeping Buddha in Vietnam			osm	10.81429	107.89502
 Bình Thuận	Lịch sử|Tham quan	Đài tưởng niệm Liệt sĩ Hàm Thuận Nam			osm	10.84768	107.87729
 Bình Thuận	Thiên nhiên|Tham quan	Núi Lùm			osm	10.99820	107.86932
-Cà Mau	Thiên nhiên|Tham quan	Vườn quốc gia Mũi Cà Mau					
+Cà Mau	Thiên nhiên|Tham quan	Vườn quốc gia Mũi Cà Mau		mui_ca_mau			
 Cà Mau	Ăn uống	Bánh Tầm Cari Cay			osm	9.18051	105.14799
 Cà Mau	Chỗ ở	Khách sạn Cà Mau			osm	9.18144	105.14841
 Cà Mau	Thiên nhiên|Tham quan	Công viên Hùng Vương			osm	9.17804	105.15163
@@ -1868,7 +1868,7 @@ Cà Mau	Chỗ ở	Nhà nghỉ Mai Về			osm	9.16367	105.28115
 Cà Mau	Chỗ ở	Nhà Trọ Yến Linh			osm	9.12786	105.28537
 Cà Mau	Chỗ ở	Nhà trọ Minh Khôi			osm	9.12688	105.28560
 Cà Mau	Chỗ ở	Khách sạn Bạch Vân			osm	8.99816	105.19883
-Cần Thơ	Mua sắm|Tham quan	Chợ nổi Cái Răng					
+Cần Thơ	Mua sắm|Tham quan	Chợ nổi Cái Răng	Hoạt động buôn bán diễn ra trên ghe thuyền. Nếu muốn quan sát nhịp chợ buổi sáng, hãy tìm chuyến tàu đi sớm và kiểm tra bến đón.	cai_rang			
 Cần Thơ	Chỗ ở	KS Phương Đông			osm	10.03005	105.78019
 Cần Thơ	Mua sắm	WinMart			osm	10.03073	105.78068
 Cần Thơ	Ăn uống	Rễ Tranh			osm	10.02905	105.77909
@@ -2175,7 +2175,7 @@ Cao Bằng	Ăn uống	Tuyet Niem Restaurant			osm	22.68698	106.44077
 Cao Bằng	Ăn uống	Kieu Trang			osm	22.68863	106.44273
 Cao Bằng	Cà phê	Quản Cà Phê			osm	22.69002	106.44266
 Đà Nẵng	Tham quan	Cầu Rồng	Dạo hai bờ sông Hàn gần cầu.	Đà Nẵng			
-Đà Nẵng	Biển|Thiên nhiên	Bãi biển Mỹ Khê					
+Đà Nẵng	Biển|Thiên nhiên	Bãi biển Mỹ Khê	Bãi cát trải dài dọc bờ biển Đà Nẵng. Bạn có thể dành một buổi sáng dạo biển và xem biển báo an toàn tại khu vực tắm.	my_khe			
 Đà Nẵng	Ăn uống	koko Green kafe 63			osm	16.06003	108.21927
 Đà Nẵng	Tham quan	Lang Bich hoa Da Nang			osm	16.06071	108.22003
 Đà Nẵng	Cà phê	Phuc Long			osm	16.06082	108.22059
@@ -2724,7 +2724,7 @@ Cao Bằng	Cà phê	Quản Cà Phê			osm	22.69002	106.44266
 Điện Biên	Chỗ ở	Minh Hieu Nha Nghi			osm	21.28732	103.00572
 Điện Biên	Thiên nhiên|Tham quan	Tượng Đài Di Tích Mường Phăng			osm	21.45135	103.14996
 Điện Biên	Thiên nhiên|Tham quan	Núi Pú Huốt			osm	21.42841	103.16348
-Đồng Nai	Thiên nhiên|Tham quan	Vườn quốc gia Cát Tiên					
+Đồng Nai	Thiên nhiên|Tham quan	Vườn quốc gia Cát Tiên		cat_tien			
 Đồng Nai	Cà phê	Café 93			osm	10.95097	106.82069
 Đồng Nai	Thiên nhiên|Tham quan	Công viên Quyết Thắng			osm	10.94892	106.82212
 Đồng Nai	Lịch sử|Tham quan	Di tích Thành cổ Biên Hòa			osm	10.95080	106.81706
@@ -2981,7 +2981,7 @@ Cao Bằng	Cà phê	Quản Cà Phê			osm	22.69002	106.44266
 Đồng Nai	Giải trí	Mega GS Lý Chính Thắng			osm	10.78064	106.68239
 Đồng Nai	Giải trí	Nhà hát Quân đội			osm	10.80196	106.65643
 Đồng Nai	Giải trí	Sân Khấu Trống Đồng			osm	10.77269	106.69232
-Đồng Tháp	Thiên nhiên|Tham quan	Vườn quốc gia Tràm Chim					
+Đồng Tháp	Thiên nhiên|Tham quan	Vườn quốc gia Tràm Chim	Tràm Chim có đồng cỏ ngập nước và nhiều loài chim nước. Hãy kiểm tra mùa quan sát chim và các tuyến đang mở trước khi đi.	tram_chim			
 Đồng Tháp	Thiên nhiên|Tham quan	CV Thiếu Nhi			osm	10.45958	105.63088
 Đồng Tháp	Cà phê	Black Sheep Cafe			osm	10.46063	105.63167
 Đồng Tháp	Tham quan	Quán ăn sáng Sông Hân			osm	10.45815	105.62862
@@ -3575,7 +3575,7 @@ Hà Nam	Tham quan	đình Hoàng Xá			osm	20.73655	105.77180
 Hà Nam	Mua sắm	Cửa hàng Hoàn Thu			osm	20.45773	106.13248
 Hà Nội	Lịch sử|Tham quan	Quảng trường Ba Đình	Tại quảng trường này, Chủ tịch Hồ Chí Minh đọc Tuyên ngôn Độc lập ngày 2/9/1945. Bạn có thể kết hợp ghé Lăng Chủ tịch Hồ Chí Minh và khu di tích Phủ Chủ tịch.	ba_dinh		21.0374	105.8354
 Hà Nội	Lịch sử|Tham quan	Văn Miếu – Quốc Tử Giám	Quần thể di tích gắn với lịch sử giáo dục Việt Nam. Các điểm dừng trong khuôn viên gồm Khuê Văn Các, bia tiến sĩ và khu thờ Quốc Tử Giám.	van_mieu		21.0281	105.8355
-Hà Nội	Lịch sử|Tham quan	Di tích Nhà tù Hỏa Lò	Di tích trên phố Hỏa Lò, gần trung tâm Hà Nội.	hoa_lo		21.0252	105.8465
+Hà Nội	Lịch sử|Tham quan	Di tích Nhà tù Hỏa Lò	Di tích trên phố Hỏa Lò, gần trung tâm Hà Nội.			21.0252	105.8465
 Hà Nội	Lịch sử|Tham quan	Hoàng thành Thăng Long	Khu di sản tại trung tâm Hà Nội.	thang_long		21.0352	105.8403
 Hà Nội	Thiên nhiên|Tham quan	Hồ Hoàn Kiếm	Đi bộ quanh hồ và ghé đền Ngọc Sơn.	ho_hoan_kiem		21.0287	105.8522
 Hà Nội	Thiên nhiên|Tham quan	Hồ Tây	Có thể kết hợp đi dạo ven hồ và ghé chùa Trấn Quốc.	ho_tay		21.0557	105.8202
@@ -3584,7 +3584,7 @@ Hà Nội	Chỗ ở	Sofitel Legend Metropole Hanoi	Khách sạn gần Nhà hát 
 Hà Nội	Chỗ ở	InterContinental Hanoi Westlake	Khách sạn ven Hồ Tây, gần đường Từ Hoa.	intercontinental_hanoi		21.0591	105.8314
 Hà Nội	Lịch sử|Tham quan|Giải trí	Nhà hát Lớn Hà Nội	Công trình biểu diễn ở khu vực Quảng trường Cách mạng Tháng Tám.	nha_hat_lon		21.0242	105.8580
 Hà Nội	Ăn uống	Phở Bát Đàn	Gợi ý ăn phở trong khu phố cổ Hà Nội.				
-Hà Nội	Mua sắm	Chợ Đồng Xuân	Chợ truyền thống ở phía bắc khu phố cổ.				
+Hà Nội	Mua sắm	Chợ Đồng Xuân	Chợ truyền thống ở phía bắc khu phố cổ.	dong_xuan			
 Hà Nội	Giải trí	Nhà hát Múa rối nước Thăng Long	Xem lịch suất diễn trước khi đến.				
 Hà Nội	Mua sắm	Brgmart			osm	21.03026	105.84997
 Hà Nội	Ăn uống	Kim Huong: Xôi - Bánh Mì - Nuoc Ep			osm	21.03007	105.85031
@@ -4324,7 +4324,7 @@ Hậu Giang	Mua sắm	Tiệm Sắt Són			osm	9.92425	105.62902
 Hậu Giang	Mua sắm	Cửa hàng bách hóa Ngọc Tiến			osm	9.92570	105.63139
 Hậu Giang	Thiên nhiên|Tham quan	Công viên Bến Nhứt			osm	9.84990	105.23891
 Hậu Giang	Thiên nhiên|Tham quan	Công viên Phiêu Vân			osm	9.98872	105.36878
-Hòa Bình	Thiên nhiên|Tham quan	Hồ Hòa Bình					
+Hòa Bình	Thiên nhiên|Tham quan	Hồ Hòa Bình		ho_hoa_binh			
 Hòa Bình	Mua sắm	Chợ Phương Lâm			osm	20.82036	105.34033
 Hòa Bình	Chỗ ở	Hải Dương			osm	20.81775	105.33965
 Hòa Bình	Thiên nhiên|Tham quan	Công viên Hòa Bình			osm	20.81609	105.34372
@@ -4712,7 +4712,7 @@ Khánh Hòa	Thiên nhiên|Tham quan	Hòn Hèo			osm	12.40409	109.27556
 Khánh Hòa	Thiên nhiên|Tham quan	Hòn Long			osm	12.39242	109.06374
 Khánh Hòa	Tham quan	Nhan tam park			osm	12.33187	108.97415
 Khánh Hòa	Lịch sử|Tham quan	Tượng Đài Cam Ranh			osm	12.01478	109.21364
-Kiên Giang	Thiên nhiên|Tham quan	Vườn quốc gia U Minh Thượng					
+Kiên Giang	Thiên nhiên|Tham quan	Vườn quốc gia U Minh Thượng		u_minh_thuong			
 Kiên Giang	Mua sắm	Mega Market Kien Giang			osm	10.00086	105.08191
 Kiên Giang	Thiên nhiên|Tham quan	Công viên			osm	9.99832	105.08201
 Kiên Giang	Cà phê	pt			osm	9.99818	105.08188
@@ -5622,7 +5622,7 @@ Long An	Lịch sử|Tham quan	XÃ AN THẠNH THỦY			osm	10.32727	106.46216
 Long An	Lịch sử|Tham quan	Khu truyền thống cách mạng Xuân Mậu Thân 1968			osm	10.72213	106.53854
 Long An	Lịch sử|Tham quan	Ấp Tây Xã Nhị Bình Huyện Châu Thành			osm	10.40579	106.22550
 Long An	Lịch sử|Tham quan	Mộ Cổ Hoà Bình			osm	10.39123	106.58288
-Nam Định	Thiên nhiên|Tham quan	Vườn quốc gia Xuân Thủy					
+Nam Định	Thiên nhiên|Tham quan	Vườn quốc gia Xuân Thủy		xuan_thuy			
 Nam Định	Mua sắm	CH Lan Thanh			osm	20.41811	106.17152
 Nam Định	Ăn uống	Nhà hàng Panda Chan			osm	20.41812	106.17174
 Nam Định	Lịch sử|Tham quan	Bảo tàng Dệt may Việt Nam			osm	20.42490	106.17006
@@ -6167,7 +6167,7 @@ Ninh Bình	Lịch sử|Tham quan	Nhà truyền thống			osm	20.09361	106.07930
 Ninh Bình	Thiên nhiên|Tham quan	nhà ông Mai Văn Thuyết			osm	20.03506	105.99646
 Ninh Bình	Lịch sử|Tham quan	Lăng miếu Triệu Tường			osm	20.08906	105.80522
 Ninh Bình	Lịch sử|Tham quan	Đài Liệt sỹ			osm	20.08981	105.80343
-Ninh Thuận	Biển|Thiên nhiên	Vịnh Vĩnh Hy					
+Ninh Thuận	Biển|Thiên nhiên	Vịnh Vĩnh Hy		vinh_vinh_hy			
 Ninh Thuận	Ăn uống	Chay Quán Color Me Vegan			osm	11.57037	108.98889
 Ninh Thuận	Chỗ ở	Huu Nghi Hotel			osm	11.56820	108.99080
 Ninh Thuận	Mua sắm	Chợ Thanh Sơn			osm	11.57050	108.99250
@@ -6490,7 +6490,7 @@ Phú Thọ	Thiên nhiên|Tham quan	Đồi Kiên			osm	21.09216	105.45270
 Phú Thọ	Tham quan	đình Tường Phiêu			osm	21.11397	105.51834
 Phú Thọ	Ăn uống	Quán Cơm			osm	21.18130	105.59796
 Phú Thọ	Chỗ ở	Melia Bavi			osm	21.08462	105.35702
-Phú Yên	Thiên nhiên|Tham quan	Gành Đá Đĩa					
+Phú Yên	Thiên nhiên|Tham quan	Gành Đá Đĩa	Các cột đá xếp sát nhau tạo thành những lớp bậc vươn ra sát biển. Khi đi bộ trên đá, hãy tránh các đoạn ướt và lưu ý sóng lớn.	ganh_da_dia			
 Phú Yên	Cà phê	Phú Anh			osm	13.08930	109.29995
 Phú Yên	Ăn uống	Mi cay toto mi			osm	13.08923	109.29981
 Phú Yên	Mua sắm	Đăng Châu Computer - Camera			osm	13.08991	109.30287
@@ -6620,7 +6620,7 @@ Phú Yên	Tham quan	Res Thuý Kiều - cầu An Hải			osm	13.28470	109.29081
 Phú Yên	Tham quan	Beach			osm	13.28843	109.29671
 Phú Yên	Tham quan	Quan ô loan			osm	13.28433	109.25531
 Phú Yên	Thiên nhiên|Tham quan	Núi Đá Bia			osm	12.89887	109.39942
-Quảng Bình	Thiên nhiên|Tham quan	Động Phong Nha					
+Quảng Bình	Thiên nhiên|Tham quan	Động Phong Nha	Điểm tham quan hang động ở Quảng Bình, có lối tiếp cận bằng thuyền. Hãy kiểm tra điều kiện tham quan và mực nước trước khi đi.	phong_nha			
 Quảng Bình	Chỗ ở	Quang Ly			osm	17.46858	106.59895
 Quảng Bình	Cà phê	Sophie Homy			osm	17.46832	106.59863
 Quảng Bình	Ăn uống	Nhán Dăt Tiêc			osm	17.46824	106.59782
@@ -6921,7 +6921,7 @@ Quảng Ngãi	Cà phê	cà phê, karaoke sao xanh			osm	14.92866	108.92222
 Quảng Ngãi	Cà phê	Cafe Hương Trà My			osm	14.92770	108.92092
 Quảng Ngãi	Ăn uống	Quán Cơm Quang Hà			osm	14.93361	108.93850
 Quảng Ngãi	Ăn uống	Quán Hữu Duyên			osm	14.91625	108.90746
-Quảng Ninh	Thiên nhiên|Tham quan	Vịnh Hạ Long					
+Quảng Ninh	Thiên nhiên|Tham quan	Vịnh Hạ Long	Các đảo đá vôi nổi giữa mặt vịnh là cảnh quan tiêu biểu của Hạ Long. Hãy kiểm tra bến khởi hành và thời lượng khi chọn tuyến tham quan bằng tàu.	vinh_ha_long			
 Quảng Ninh	Mua sắm	Chợ Hòn Gai (Hon Gai Market)			osm	20.94980	107.08231
 Quảng Ninh	Thiên nhiên|Tham quan	Núi Bài Thơ			osm	20.94832	107.07829
 Quảng Ninh	Chỗ ở	Hùng vùòng			osm	20.95255	107.08033
@@ -7128,7 +7128,7 @@ Quảng Ninh	Cà phê	Nam VIP CAFÉ			osm	20.72563	107.04792
 Quảng Ninh	Cà phê	Tit & Mit			osm	20.72536	107.04993
 Quảng Ninh	Thiên nhiên|Tham quan	Ga Cat Hải			osm	20.81266	106.88605
 Quảng Ninh	Tham quan	Ship			osm	20.72206	107.05060
-Quảng Trị	Lịch sử|Tham quan	Thành cổ Quảng Trị					
+Quảng Trị	Lịch sử|Tham quan	Thành cổ Quảng Trị		thanh_co_quang_tri			
 Quảng Trị	Giải trí	Nhà Văn hóa Trung Tâm			osm	16.81297	107.10066
 Quảng Trị	Ăn uống	Incredible Bun Bo			osm	16.81372	107.09784
 Quảng Trị	Cà phê	FARM COFFEE			osm	16.81600	107.09999
@@ -7208,7 +7208,7 @@ Quảng Trị	Lịch sử|Tham quan	Nghĩa trang liệt sĩ Quốc gia Trường
 Quảng Trị	Lịch sử|Tham quan	Cột cờ Cầu Hiền Lương			osm	17.00565	107.05022
 Quảng Trị	Lịch sử|Tham quan	Bảo tàng lịch sử Cầu Hiền Lương			osm	17.00603	107.05137
 Quảng Trị	Chỗ ở	Thành Phát			osm	17.01854	107.11127
-Sóc Trăng	Lịch sử|Tham quan	Chùa Dơi					
+Sóc Trăng	Lịch sử|Tham quan	Chùa Dơi		chua_doi			
 Sóc Trăng	Cà phê	Like Food & Drink			osm	9.60177	105.97575
 Sóc Trăng	Mua sắm	Chợ Sóc Trăng			osm	9.60338	105.97594
 Sóc Trăng	Ăn uống	Lotteria			osm	9.60221	105.97406
@@ -8057,8 +8057,8 @@ Tiền Giang	Lịch sử|Tham quan	Bia tưởng niệm liệt sỹ huyện Tân 
 Tiền Giang	Thiên nhiên|Tham quan	Công viên Tân Trụ			osm	10.51410	106.50678
 Tiền Giang	Lịch sử|Tham quan	Mộ Cổ Hoà Bình			osm	10.39123	106.58288
 Tiền Giang	Lịch sử|Tham quan	Hung khánh trung B			osm	10.18146	106.23288
-TP. Hồ Chí Minh	Lịch sử|Tham quan	Dinh Độc Lập					
-TP. Hồ Chí Minh	Mua sắm	Chợ Bến Thành					
+TP. Hồ Chí Minh	Lịch sử|Tham quan	Dinh Độc Lập	Dinh là điểm tham quan gắn với sự kiện 30/4/1975. Bạn có thể dành thời gian xem các phòng trưng bày và kiến trúc của tòa nhà.	dinh_doc_lap			
+TP. Hồ Chí Minh	Mua sắm	Chợ Bến Thành	Ngôi chợ trung tâm thành phố có các dãy hàng ăn, quà lưu niệm và đồ dùng. Bạn có thể dành thời gian dạo từng dãy và hỏi giá trước khi mua.	ben_thanh			
 TP. Hồ Chí Minh	Tham quan	Bưu điện Trung tâm Sài Gòn			osm	10.77998	106.70002
 TP. Hồ Chí Minh	Ăn uống	Highlands Bưu Điện Thành Phố			osm	10.78009	106.69948
 TP. Hồ Chí Minh	Cà phê	Gióng			osm	10.77935	106.70042
@@ -8315,7 +8315,7 @@ TP. Hồ Chí Minh	Giải trí	Rạp Phim Megastar			osm	10.75611	106.66285
 TP. Hồ Chí Minh	Giải trí	Rạp Xiếc và Biểu diễn đa năng Phú Thọ			osm	10.77017	106.65499
 TP. Hồ Chí Minh	Giải trí	BHD Cinema			osm	10.80250	106.74155
 TP. Hồ Chí Minh	Giải trí	Rạp Phim CGV CT Plaza			osm	10.81308	106.66565
-Trà Vinh	Thiên nhiên|Tham quan	Ao Bà Om					
+Trà Vinh	Thiên nhiên|Tham quan	Ao Bà Om		ao_ba_om			
 Trà Vinh	Thiên nhiên|Tham quan	Công viên Kiên Thị Nhẫn			osm	9.93159	106.33824
 Trà Vinh	Ăn uống	Bún nước lèo Sóc Trăng			osm	9.92881	106.34266
 Trà Vinh	Giải trí	Rạp hát Thái Bình			osm	9.93333	106.34221
@@ -8814,7 +8814,7 @@ Vĩnh Phúc	Mua sắm	Big C			osm	21.18636	105.78267
 Vĩnh Phúc	Mua sắm	Chợ Minh Phương			osm	21.32904	105.37178
 Vĩnh Phúc	Mua sắm	Chợ Nhông			osm	21.22675	105.37695
 Vĩnh Phúc	Mua sắm	Xưởng tranh kính nghệ thuật			osm	21.11089	105.48569
-Yên Bái	Thiên nhiên|Tham quan	Ruộng bậc thang Mù Cang Chải					
+Yên Bái	Thiên nhiên|Tham quan	Ruộng bậc thang Mù Cang Chải	Những thửa ruộng chạy thành tầng trên sườn núi. Cảnh quan thay đổi theo mùa canh tác, nên hãy chọn thời điểm và điểm ngắm theo lịch chuyến đi.	mu_cang_chai			
 Yên Bái	Chỗ ở	Rose			osm	21.71848	104.91244
 Yên Bái	Thiên nhiên|Tham quan	Vườn Hoa KM5			osm	21.72258	104.91335
 Yên Bái	Lịch sử|Tham quan	Bảo tàng Yên Bái			osm	21.71923	104.91443
@@ -8862,7 +8862,7 @@ Yên Bái	Chỗ ở	Dung Khan			osm	21.55689	105.00648
 Yên Bái	Chỗ ở	Hoàng Lộc			osm	21.55264	105.00937
 Yên Bái	Chỗ ở	Suoi khoang nong nha nghi Dai Duong			osm	21.76540	105.12322
 Huế	Lịch sử|Tham quan	Đại Nội Huế	Dành thời gian đi bộ giữa các công trình trong khu di sản.	Huế			
-Huế	Mua sắm|Ăn uống	Chợ Đông Ba					
+Huế	Mua sắm|Ăn uống	Chợ Đông Ba	Chợ là một điểm dừng để tìm món ăn và đặc sản ở Huế. Hãy hỏi giá và khối lượng trước khi chọn mua quà mang về.	dong_ba			
 Huế	Cà phê	Starbucks			osm	16.46921	107.59090
 Huế	Ăn uống	Nhà hàng nổi Sông Hương			osm	16.46910	107.59097
 Huế	Thiên nhiên|Tham quan	Công viên 3 Tháng 2			osm	16.46874	107.59151
@@ -9514,8 +9514,8 @@ Phú Quốc	Mua sắm	Chợ An Thới			osm	10.01762	104.01377
 Phú Quốc	Biển|Thiên nhiên	Bãi Rạch Tràm			osm	10.42925	103.97154
 Phú Quốc	Thiên nhiên|Tham quan	Núi Chảo			osm	10.43915	103.99227
 Đà Lạt	Thiên nhiên|Tham quan	Hồ Xuân Hương		Đà Lạt			
-Đà Lạt	Lịch sử|Tham quan	Ga Đà Lạt					
-Đà Lạt	Mua sắm|Ăn uống	Chợ Đà Lạt					
+Đà Lạt	Lịch sử|Tham quan	Ga Đà Lạt	Nhà ga có mái cao nhiều chóp và là một điểm dừng để tìm hiểu đường sắt ở Đà Lạt. Nếu định đi tàu, hãy tra lịch chạy và giá vé trước.	ga_da_lat			
+Đà Lạt	Mua sắm|Ăn uống	Chợ Đà Lạt	Các dãy hàng trong chợ có thực phẩm và hàng quà. Bạn có thể kết hợp ghé chợ với một vòng đi bộ ở trung tâm Đà Lạt.	cho_da_lat			
 Đà Lạt	Chỗ ở	Lumina dalat hotel			osm	11.93858	108.43953
 Đà Lạt	Ăn uống	Thanh Thuỷ			osm	11.94179	108.43951
 Đà Lạt	Cà phê	Thanh			osm	11.93809	108.43974
@@ -9903,7 +9903,7 @@ Sa Pa	Tham quan	Thác Tác Tình			osm	22.34762	103.61346
 Sa Pa	Thiên nhiên|Tham quan	Núi Nam Kang Ho Tao			osm	22.15038	103.97037
 Sa Pa	Mua sắm	Gian Hàng Trạm Dừng Nghỉ KM 237 Lào Cai			osm	22.36275	104.08184
 Hội An	Lịch sử|Tham quan	Phố cổ Hội An		Hội An			
-Hội An	Lịch sử|Tham quan	Chùa Cầu					
+Hội An	Lịch sử|Tham quan	Chùa Cầu	Cây cầu có mái che nằm trong phố cổ Hội An. Có thể ghé khi đi bộ qua khu nhà cổ và các phố lân cận.	chua_cau			
 Hội An	Biển|Thiên nhiên	Biển An Bàng					
 Hội An	Cà phê	Hoang Thu			osm	15.87992	108.32997
 Hội An	Lịch sử|Tham quan	Bảo tàng Hội An			osm	15.88031	108.32947
